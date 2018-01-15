@@ -27,15 +27,15 @@ glm::vec3 bp_diffuse_shading(Scene scene, Sphere sphere, glm::vec3 intersection_
 
 	for(unsigned int i = 0; i < scene.point_lights.size(); i++)
 	{
-//		if(!shadow(scene, intersection_point, scene.point_lights[i]))
-	//	{
+		if(!scene.use_shadows || !shadow(scene, intersection_point, scene.point_lights[i]))
+		{
 			glm::vec3 light_direction = glm::normalize(scene.point_lights[i].position - intersection_point);
 
 			float distance = glm::length(scene.point_lights[i].position - intersection_point);
 			float intensity = 1.0f / powf(glm::length(distance), 2.0f);
 
 			colour += sphere.material.diffuse * scene.point_lights[i].colour * intensity * std::max(0.0f, glm::dot(norm, light_direction));
-		//}
+		}
 	}
 
 	return colour;

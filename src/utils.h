@@ -21,6 +21,22 @@ bool intersection_occurs(Ray ray, Sphere sphere);
 bool shadow(Scene scene, glm::vec3 intersection_point, PointLight point_light);
 
 
+struct Options
+{
+    bool monte_carlo = false;
+    bool visual = true;
+    float fov = 60;
+    short num_path_traces = 1;
+    short grid_size = 0;
+    int max_depth = 3;
+
+    void to_string()
+    {
+        printf("\n\nMonte carlo: %d\nvisual display: %d\nfov: %f\nnum paths traced: %d\nsupersample grid size: %d\nmax depth: %d\n", monte_carlo, visual, fov, num_path_traces, grid_size, max_depth);
+    }
+};
+
+
 bool shadow(Scene scene, glm::vec3 intersection_point, PointLight point_light)
 {
 	glm::vec3 direction = glm::normalize(point_light.position - intersection_point);

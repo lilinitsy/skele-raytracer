@@ -11,24 +11,12 @@
 #include "raytrace.h"
 
 
-struct Options
-{
-    bool monte_carlo = false;
-    bool visual = true;
-    float fov = 60;
-    short num_path_traces = 1;
-    short grid_size = 0;
-    int max_depth = 3;
-
-    void to_string()
-    {
-        printf("\n\nMonte carlo: %d\nvisual display: %d\nfov: %f\nnum paths traced: %d\nsupersample grid size: %d\nmax depth: %d\n", monte_carlo, visual, fov, num_path_traces, grid_size, max_depth);
-    }
-};
+void generate_rays_parallel(Scene scene, Options option, char *output);
+void generate_rays(Scene scene, Options option, char *output);
 
 
 
-void generate_rays_parallel(Scene scene, Options option)
+void generate_rays_parallel(Scene scene, Options option, char *output)
 {
     glm::vec3 **image = new glm::vec3*[scene.height];
 
@@ -82,7 +70,7 @@ void generate_rays_parallel(Scene scene, Options option)
         }
     }
 
-    std::ofstream ofs("raytrace.ppm", std::ios::out | std::ios::binary);
+    std::ofstream ofs(output, std::ios::out | std::ios::binary);
     ofs << "P6\n" << scene.width << " " << scene.height << "\n255\n";
 
 	for (int i = 0; i < scene.height; i++)
@@ -103,11 +91,11 @@ void generate_rays_parallel(Scene scene, Options option)
 
 
 
-void generate_rays(Scene scene, Options option)
+void generate_rays(Scene scene, Options option, char *output)
 {
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Event event;
-    SDL_Window *window = SDL_CreateWindow("Raytracer", 100, 100, scene.width, scene.height, 0);
+    SDL_Window *window = SDL_CreateWindow("Skele-Raytracer", 100, 100, scene.width, scene.height, 0);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -179,7 +167,7 @@ void generate_rays(Scene scene, Options option)
         SDL_RenderPresent(renderer);
     }
 
-    std::ofstream ofs("raytrace.ppm", std::ios::out | std::ios::binary);
+    std::ofstream ofs(output, std::ios::out | std::ios::binary);
     ofs << "P6\n" << scene.width << " " << scene.height << "\n255\n";
 
 	for (int i = 0; i < scene.height; i++)
@@ -191,8 +179,8 @@ void generate_rays(Scene scene, Options option)
                    (unsigned char)(std::min(float(1), image[i][j].z) * 255);
         }
     }
-    ofs.close();
 
+    ofs.close();
 
     printf("***\nWROTE TO PPM\n***\n");
 
@@ -207,7 +195,6 @@ void generate_rays(Scene scene, Options option)
     }
 
 
-
     delete[] image;
 }
 
@@ -217,10 +204,16 @@ int main(int argc, char *argv[])
 
     Options option;
     Scene scene;
+
     int width = scene.width;
     int height = scene.height;
+
     char *path;
+    char *output;
+
+    bool output_path_passed = false;
     bool path_passed = false;
+    bool use_shadows;
 
     for(int i = 0; i < argc; i++)
     {
@@ -335,6 +328,26 @@ int main(int argc, char *argv[])
                 return 0;
             }
         }
+
+        if(strcmp(argv[i], "--output") == 0)
+        {
+            if(i + 1 < argc)
+            {
+                output = argv[i + 1];
+                output_path_passed = true;
+            }
+
+            else
+            {
+                std::cerr << "output path must be passed after --output" << std::endl;
+                return 0;
+            }
+        }
+
+        if(strcmp(argv[i], "--shadow") == 0)
+        {
+            use_shadows = true;
+        }
     }
 
     if(!path_passed)
@@ -343,9 +356,16 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    if(!output_path_passed)
+    {
+        std::cerr << "no output destination was passed. Pass with --output destination_path.ppm" << std::endl;
+        return 0;
+    }
+
     scene = parseScene(path);
     scene.width = width;
     scene.height = height;
+    scene.use_shadows = use_shadows;
 
     option.to_string();
 
@@ -353,12 +373,12 @@ int main(int argc, char *argv[])
 
     if(option.visual)
     {
-        generate_rays(scene, option);
+        generate_rays(scene, option, output);
     }
 
     else
     {
-        generate_rays_parallel(scene, option);
+        generate_rays_parallel(scene, option, output);
     }
 
 	return 0;

@@ -22,6 +22,7 @@ struct Scene
 	AmbientLight ambient_light = AmbientLight();
 	glm::vec3 background;
 	int maxDepth = 1;
+	bool use_shadows = false;
 };
 
 void toString(Scene &scene);
