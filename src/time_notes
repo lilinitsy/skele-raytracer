@@ -1,0 +1,17 @@
+spheres2.scn:
+	blinn-phong, shadows on:./raytracer --path ../scenes/spheres2.scn --parallel true 470% cpu 16.137 total
+	blinn-phong, shadows on, 5x5 jittered supersampling (25 samples per pixel):./raytracer --path ../scenes/spheres2.scn --jsample 5 --parallel true  478% cpu 6:54.15 total
+	monte-carlo, shadows on, 16 paths traced: ./raytracer --path ../scenes/spheres2.scn --parallel true --gillum 16  342% cpu 6:16.81 total
+
+	blinn-phong, shadows off: ./raytracer --path ../scenes/spheres2.scn --parallel true  488% cpu 9.642 total
+	blinn-phong, shadows off, 5x5 jittered supersampling (25samples per pixel): ./raytracer --path ../scenes/spheres2.scn --parallel true --jsample 5  519% cpu 3:47.85 total
+	monte-carlo, shadows off, 16 paths traced: ./raytracer --path ../scenes/spheres2.scn --parallel true --gillum 16  365% cpu 4:36.87 total
+
+spheres1.scn:
+	blinn-phong, shadows on: ./raytracer --path ../scenes/spheres1.scn --parallel true 366% cpu 4.523 total
+	blinn-phong, shadows on, 5x5 jittered supersampling (25 samples per pixel): ./raytracer --path ../scenes/spheres1.scn --parallel true --jsample 5  378% cpu 1:49.27 total
+	monte-carlo, shadows on, 16 paths traced:
+
+	blinn-phong, shadows off: ./raytracer --path ../scenes/spheres1.scn --parallel true 394% cpu 3.003 total
+	blinn-phong, shadows off, 5x5 jittered supersampling (25 samples per pixel): ./raytracer --path ../scenes/spheres1.scn --parallel true --jsample 5  417% cpu 1:10.77 total
+	monte-carlo, shadows off, 16 paths traced: ./raytracer --path ../scenes/spheres1.scn --parallel true --gillum 16  355% cpu 1:16.34 total
