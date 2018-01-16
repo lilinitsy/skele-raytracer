@@ -44,11 +44,6 @@ The same scene without any supersampling finished rendering in ``9.642`` seconds
 ![bp-gillum16] (https://github.com/lilinitsy/skele-raytracer/blob/master/renders/no_shadow/sample_pngs/bp_gillum16.png)
 Here's the same render with Monte-Carlo path traced global illumination, shot with 16 paths traced. It rendered at 1920x1080 in ``4 minutes 36.87 seconds``.
 
-![bp-jsample5-shadows] (https://github.com/lilinitsy/skele-raytracer/blob/master/renders/shadows/sample_pngs/bp_jsample5_parallel_shadows.png)
-With shadows enabled, this render at 25 samples / pixel jittered supersampling finished in ``6 minutes 54.15 seconds``.  The same render without supersampling, but with shadows, finished in ``16.137 seconds``.
-
-![bp-gillum16-shadows] (https://github.com/lilinitsy/skele-raytracer/blob/master/renders/shadows/sample_pngs/bp_parallel_shadows_gillum16.png)
-Comparable to image 2, this render has the same global illumination with 16 paths traced, but shadows are enabled. It finished in ``6 minutes 16.81 seconds``. Interestingly, the issue with shadows is not so apparent in this one, due to the global illumination and noise covering up some of it, besides the center sphere.
 
 
 # Issues
