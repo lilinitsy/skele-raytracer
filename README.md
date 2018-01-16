@@ -36,7 +36,7 @@ The options followed by their argument types are::
 # Example Images
 Multiple renders are provided in /renders. Default scene files are found in /scenes.
 
-![Testsphere](https://github.com/lilinitsy/skele-raytracer/blob/master/renders/no_shadow/bp_jsample5.ppm)
+![Testsphere](https://github.com/lilinitsy/skele-raytracer/blob/master/renders/no_shadow/sample_pngs/bp_jsample5.png)
 
 # Issues
-Shadows aren't 100% working. The edges are sometimes the only portions that appear, but this is inconsistent.
+Shadows aren't 100% working. The edges are sometimes the only portions that appear, but this is inconsistent. This is apparent in the second example image.
