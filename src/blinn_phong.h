@@ -49,8 +49,8 @@ glm::vec3 bp_specular_shading(Scene scene, Sphere sphere, glm::vec3 intersection
 
 	for(unsigned int i = 0; i < scene.point_lights.size(); i++)
 	{
-//		if(!shadow(scene, intersection_point, scene.point_lights[i]))
-	//	{
+		if(!scene.use_shadows || !shadow(scene, intersection_point, scene.point_lights[i]))
+		{
 			glm::vec3 light_direction = glm::normalize(scene.point_lights[i].position - intersection_point);
 			glm::vec3 half_vector = (view_direction + light_direction) / glm::length(view_direction + light_direction);
 
@@ -58,7 +58,7 @@ glm::vec3 bp_specular_shading(Scene scene, Sphere sphere, glm::vec3 intersection
 			float intensity = 1.0f / powf(glm::length(distance), 2.0f);
 
 			colour += sphere.material.specular * scene.point_lights[i].colour * intensity * powf(std::max(0.0f, glm::dot(norm, half_vector)), sphere.material.power);
-	//	}
+		}
 	}
 
 	return colour;
