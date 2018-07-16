@@ -29,7 +29,7 @@ The options followed by their argument types are::
 --gillum	// int number of paths traced per ray follows
 --jsample 	// int size of grid for jittered supersampling
 --depth		// int max depth for reflection rays tracing. Default 1 (1 reflection)
---parallel	// nothing passed after, turns on parallelization and turns off the visual display
+--parallel	// pass true to tur on parallelization and turns off the visual display
 --shadow	// nothing passed after, turns shadows on.
 ```
 

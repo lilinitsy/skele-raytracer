@@ -110,7 +110,7 @@ void generate_rays(Scene scene, Options option, char *output)
         image[i] = new glm::vec3[scene.width];
     }
 
-//    #pragma omp parallel for
+
     for (int y = 0; y < scene.height; y++)
 	{
         for (int x = 0; x < scene.width; x++)

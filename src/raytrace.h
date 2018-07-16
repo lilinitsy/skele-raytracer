@@ -32,39 +32,56 @@ glm::vec3 uniform_sample_hemi(float r1, float r2)
 
 glm::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_sphere, glm::vec3 intersection_point, glm::vec3 intersection_point_normal, int depth, bool monte_carlo, short num_path_traces)
 {
-		glm::vec3 total_colour = glm::vec3(0.0f, 0.0f, 0.0f);
-		total_colour += bp_ambient_shading(scene, intersected_sphere);
-		total_colour += bp_diffuse_shading(scene, intersected_sphere, intersection_point, intersection_point_normal);
-		total_colour += bp_specular_shading(scene, intersected_sphere, intersection_point, intersection_point_normal);
+	glm::vec3 total_colour = glm::vec3(0.0f, 0.0f, 0.0f);
+	total_colour += bp::ambient_shading(scene, intersected_sphere);
+	total_colour += bp::diffuse_shading(scene, intersected_sphere, intersection_point, intersection_point_normal);
+	total_colour += bp::specular_shading(scene, intersected_sphere, intersection_point, intersection_point_normal);
 
-		glm::vec3 reflected_ray_direction = glm::normalize(glm::vec3(1.0f, 1.0f, 1.0f));
+	glm::vec3 reflected_ray_direction = glm::normalize(glm::vec3(1.0f, 1.0f, 1.0f));
 
-		float fr = bp_fresnel(reflected_ray_direction, intersection_point_normal, intersected_sphere);
+	float fr = bp::fresnel(reflected_ray_direction, intersection_point_normal, intersected_sphere);
 
-		glm::vec3 refraction_colour = glm::vec3(0.0f, 0.0f, 0.0f);
-		glm::vec3 reflection_colour = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 refraction_colour = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 reflection_colour = glm::vec3(0.0f, 0.0f, 0.0f);
 
-		if(intersected_sphere.material.specular != glm::vec3(0.0f, 0.0f, 0.0f))
+	if(intersected_sphere.material.specular != glm::vec3(0.0f, 0.0f, 0.0f) && depth > 0)
+	{
+		for(unsigned int i = 0; i < scene.point_lights.size(); i++)
 		{
-			for(unsigned int i = 0; i < scene.point_lights.size(); i++)
+			glm::vec3 light_direction = glm::normalize(scene.point_lights[i].position - intersection_point);
+
+			if(fr < 1)
 			{
-				glm::vec3 light_direction = glm::normalize(scene.point_lights[i].position - intersection_point);
+				glm::vec3 refraction_ray_direction = bp::refraction(ray.direction, intersection_point_normal, intersected_sphere);
+				Ray refracted_ray = Ray(intersection_point, refraction_ray_direction);
 
-				if(fr < 1)
-				{
-					glm::vec3 refraction_ray_direction = bp_refraction(ray.direction, intersection_point_normal, intersected_sphere);
-					Ray refracted_ray = Ray(intersection_point, refraction_ray_direction);
-
-					refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces);
-				}
-
-				reflected_ray_direction = bp_reflect_direction(light_direction, intersection_point_normal);
-				Ray reflected_ray = Ray(intersection_point, reflected_ray_direction);
-				reflection_colour += (1 - fr) * intersected_sphere.material.specular * shade(reflected_ray, scene, depth - 1, monte_carlo, num_path_traces);
+				refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces);
 			}
+
+			reflected_ray_direction = bp::reflect_direction(light_direction, intersection_point_normal);
+			Ray reflected_ray = Ray(intersection_point, reflected_ray_direction);
+			reflection_colour += (1 - fr) * intersected_sphere.material.specular * shade(reflected_ray, scene, depth - 1, monte_carlo, num_path_traces);
 		}
 
-		return total_colour + refraction_colour + reflection_colour;
+		for(unsigned int i = 0; i < scene.directional_lights.size(); i++)
+		{
+			glm::vec3 light_direction = glm::normalize(scene.directional_lights[i].direction);
+
+			if(fr < 1)
+			{
+				glm::vec3 refraction_ray_direction = bp::refraction(ray.direction, intersection_point_normal, intersected_sphere);
+				Ray refracted_ray = Ray(intersection_point, refraction_ray_direction);
+
+				refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces);
+			}
+
+			reflected_ray_direction = bp::reflect_direction(light_direction, intersection_point_normal);
+			Ray reflected_ray = Ray(intersection_point, reflected_ray_direction);
+			reflection_colour += (1 - fr) * intersected_sphere.material.specular * shade(reflected_ray, scene, depth - 1, monte_carlo, num_path_traces);
+		}
+	}
+
+	return total_colour + refraction_colour + reflection_colour;
 }
 
 
@@ -72,7 +89,7 @@ glm::vec3 montecarlo_global_illumination(Ray ray, Scene scene, Sphere intersecte
 {
 	glm::vec3 total_colour = glm::vec3(0.0f, 0.0f, 0.0f);
 
-	auto tmp = transform_coordinate_space(intersection_point_normal);
+	std::tuple<glm::vec3, glm::vec3> tmp = transform_coordinate_space(intersection_point_normal);
 	glm::vec3 perp_to_normal = std::get<0>(tmp);
 	glm::vec3 perp_to_both = std::get<1>(tmp);
 

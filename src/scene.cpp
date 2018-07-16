@@ -12,7 +12,7 @@ using std::string;
 Scene parseScene(string fileName)
 {
     // open the file containing the scene description
-	Scene the_scene;
+	Scene scene;
 	Material mat;
 
     FILE* fp = fopen(fileName.c_str(), "r");
@@ -50,7 +50,7 @@ Scene parseScene(string fileName)
             printf("Sphere as position (%f,%f,%f) with radius %f\n",x,y,z,r);
 			Sphere sphere = Sphere(glm::vec3(x, y, z), r, mat);
 
-			the_scene.spheres.push_back(sphere);
+			scene.spheres.push_back(sphere);
         }
 
         else if(strcmp(command, "camera") == 0)
@@ -63,14 +63,13 @@ Scene parseScene(string fileName)
 			Camera cam = Camera(glm::vec3(posX, posY, posZ), glm::vec3(viewDirX, viewDirY, viewDirZ), glm::vec3(ux, uy, uz), halfHeightAngle);
 			glm::normalize(cam.direction);
 			glm::normalize(cam.up);
-			the_scene.camera = cam;
+			scene.camera = cam;
 
 			FILE *spheres1 = fopen("simplesphere.txt", "w");
 
-
-					fprintf(spheres1, "Up: (%f, %f, %f)\t Position: (%f, %f, %f)\n",
-											the_scene.camera.up.x, 	the_scene.camera.up.y, 	the_scene.camera.up.z,
-											the_scene.camera.position.x, the_scene.camera.position.y, the_scene.camera.position.z);
+            fprintf(spheres1, "Up: (%f, %f, %f)\t Position: (%f, %f, %f)\n",
+                                    scene.camera.up.x, 	scene.camera.up.y, 	scene.camera.up.z,
+                                    scene.camera.position.x, scene.camera.position.y, scene.camera.position.z);
 
 			fclose(spheres1);
 
@@ -78,8 +77,8 @@ Scene parseScene(string fileName)
 
         else if(strcmp(command, "film_resolution") == 0)
         {
-            sscanf(line, "film_resolution %d %d", &the_scene.width, &the_scene.height);
-            printf("Film resolution: %d x %d\n", the_scene.width, the_scene.height);
+            sscanf(line, "film_resolution %d %d", &scene.width, &scene.height);
+            printf("Film resolution: %d x %d\n", scene.width, scene.height);
         }
 
         else if(strcmp(command, "background") == 0)
@@ -87,7 +86,7 @@ Scene parseScene(string fileName)
             float r,g,b;
             sscanf(line,"background %f %f %f", &r, &g, &b);
             printf("Background color of (%f,%f,%f)\n",r,g,b);
-			the_scene.background = glm::vec3(r, g, b);
+			scene.background = glm::vec3(r, g, b);
         }
 
         else if(strcmp(command, "material") == 0)
@@ -128,12 +127,11 @@ Scene parseScene(string fileName)
 			{
 				b = 1;
 			}
-	/*		DirectionalLight light();
-			light.colour = Colour(r, g, b);
-			light.x = x;
-			light.y = y;
-			light.z = z;
-			the_scene.dirLight.push_back(light); */
+	
+            DirectionalLight directional_light = DirectionalLight(glm::vec3(x, y, z), glm::vec3(r, g, b));
+            printf("Directional light colour (%f, %f %f) with direction (%f, %f, %f)\n",
+                directional_light.colour.r, directional_light.colour.g, directional_light.colour.b,
+                directional_light.direction.x, directional_light.direction.x, directional_light.direction.z);
 		}
 
         else if(strcmp(command, "point_light") == 0)
@@ -146,7 +144,7 @@ Scene parseScene(string fileName)
 			printf("Point light colour (%f, %f, %f), located at (%f, %f, %f)\n",
 				point_light.colour.r, point_light.colour.g, point_light.colour.b,
 				point_light.position.x, point_light.position.y, point_light.position.z);
-			the_scene.point_lights.push_back(point_light);
+			scene.point_lights.push_back(point_light);
 		}
 
         else if(strcmp(command, "ambient_light") == 0)
@@ -155,9 +153,9 @@ Scene parseScene(string fileName)
             sscanf(line, "ambient_light %f %f %f", &r, &g, &b);
             printf("Ambient light colour (%f, %f, %f)\n", r, g, b);
 
-			the_scene.ambient_light.colour.r += r;
-			the_scene.ambient_light.colour.g += g;
-			the_scene.ambient_light.colour.b += b;
+			scene.ambient_light.colour.r += r;
+			scene.ambient_light.colour.g += g;
+			scene.ambient_light.colour.b += b;
         }
 
         else if(strcmp(command, "max_depth") == 0)
@@ -165,7 +163,7 @@ Scene parseScene(string fileName)
             float n;
             sscanf(line, "max_depth %f", &n);
             printf("max_depth %f\n", n);
-			the_scene.maxDepth = n;
+			scene.maxDepth = n;
         }
 
         else if(strcmp(command, "output_image") == 0)
@@ -182,12 +180,12 @@ Scene parseScene(string fileName)
     }
 
 	printf("\n\n\n\n\n\n");
-	for(unsigned int i = 0; i < the_scene.spheres.size(); i++)
+	for(unsigned int i = 0; i < scene.spheres.size(); i++)
 	{
-		the_scene.spheres[i].to_string();
+		scene.spheres[i].to_string();
 	}
 
-	return the_scene;
+	return scene;
 }
 
 void toString(Scene &scene)

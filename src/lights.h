@@ -22,13 +22,19 @@ struct AmbientLight
 
 struct DirectionalLight
 {
-	glm::vec3 position;
+	glm::vec3 direction;
 	glm::vec3 colour;
 
 	DirectionalLight()
 	{
 		colour = glm::vec3(0, 0, 0);
-		position = glm::vec3(0, 0, 0);
+		direction = glm::vec3(0, 0, 0);
+	}
+
+	DirectionalLight(glm::vec3 dir, glm::vec3 col)
+	{
+		direction = dir;
+		colour = col;
 	}
 };
 

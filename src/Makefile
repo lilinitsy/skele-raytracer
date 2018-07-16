@@ -1,5 +1,5 @@
-CXX=g++ -fopenmp -fcilkplus -lSDL2
-CXXFLAGS=-g -std=c++11 -fopenmp -fcilkplus -Wall -I/usr/include/SDL2/
+CXX=clang++ -fopenmp -lSDL2
+CXXFLAGS=-g -std=c++11 -fopenmp -Wall -I/usr/include/SDL2/
 
 all: raytracer
 clean:

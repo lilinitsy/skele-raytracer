@@ -19,6 +19,7 @@ float clamp(float a, float b, float input);
 std::tuple<glm::vec3, glm::vec3> transform_coordinate_space(glm::vec3 normal);
 bool intersection_occurs(Ray ray, Sphere sphere);
 bool shadow(Scene scene, glm::vec3 intersection_point, PointLight point_light);
+bool shadow(Scene scene, glm::vec3 intersection_point, DirectionalLight directional_light);
 
 
 struct Options
@@ -53,6 +54,21 @@ bool shadow(Scene scene, glm::vec3 intersection_point, PointLight point_light)
 	return false;
 }
 
+bool shadow(Scene scene, glm::vec3 intersection_point, DirectionalLight directional_light)
+{
+	glm::vec3 direction = glm::normalize(directional_light.direction);
+	Ray ray(intersection_point + 0.000001f, direction);
+
+	for(unsigned int i = 0; i < scene.spheres.size(); i++)
+	{
+		if(intersection_occurs(ray, scene.spheres[i]))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
 
 float euclidean_distance(int x, int y)
 {

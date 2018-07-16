@@ -7,23 +7,20 @@
 #include "camera.h"
 
 
-using std::string;
-using std::vector;
-
-
 struct Scene
 {
 	int width = 1920, height = 1080; // used for res
-	vector<Sphere> spheres;
-	vector<Triangle> triangles;
-	vector<PointLight> point_lights;
-	vector<DirectionalLight> directional_lights;
-	Camera camera;
+	std::vector<Sphere> spheres;
+	std::vector<Triangle> triangles;
+	std::vector<PointLight> point_lights;
+	std::vector<DirectionalLight> directional_lights;
 	AmbientLight ambient_light = AmbientLight();
+
+	Camera camera;
 	glm::vec3 background;
 	int maxDepth = 1;
 	bool use_shadows = false;
 };
 
 void toString(Scene &scene);
-Scene parseScene(string fileName);
+Scene parseScene(std::string fileName);
