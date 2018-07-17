@@ -9,15 +9,16 @@
 #include "shapes.h"
 #include "lights.h"
 #include "scene.h"
+#include "SphereCollider.h"
 
 
 float euclidean_distance(int x, int y);
 float smallest_root(float a, float b, float c);
-float collision_distance(Ray ray, Sphere sphere);
+float collision_distance(Ray ray, SphereCollider collider);
 float intensity_of(PointLight light);
 float clamp(float a, float b, float input);
 std::tuple<glm::vec3, glm::vec3> transform_coordinate_space(glm::vec3 normal);
-bool intersection_occurs(Ray ray, Sphere sphere);
+bool intersection_occurs(Ray ray, SphereCollider collider);
 bool shadow(Scene scene, glm::vec3 intersection_point, PointLight point_light);
 bool shadow(Scene scene, glm::vec3 intersection_point, DirectionalLight directional_light);
 
@@ -45,7 +46,7 @@ bool shadow(Scene scene, glm::vec3 intersection_point, PointLight point_light)
 
 	for(unsigned int i = 0; i < scene.spheres.size(); i++)
 	{
-		if(intersection_occurs(ray, scene.spheres[i]))
+		if(intersection_occurs(ray, scene.spheres[i].collider))
 		{
 			return true;
 		}
@@ -61,7 +62,7 @@ bool shadow(Scene scene, glm::vec3 intersection_point, DirectionalLight directio
 
 	for(unsigned int i = 0; i < scene.spheres.size(); i++)
 	{
-		if(intersection_occurs(ray, scene.spheres[i]))
+		if(intersection_occurs(ray, scene.spheres[i].collider))
 		{
 			return true;
 		}
@@ -105,12 +106,12 @@ float smallest_root(float a, float b, float c)
 }
 
 
-float collision_distance(Ray ray, Sphere sphere)
+float collision_distance(Ray ray, SphereCollider collider)
 {
-	glm::vec3 e_c = ray.position - sphere.position;
+	glm::vec3 e_c = ray.position - collider.position;
 	float a = glm::dot(ray.direction, ray.direction);
 	float b = 2 * glm::dot(ray.direction, e_c);
-	float c = glm::dot(e_c, e_c) - sphere.radius * sphere.radius;
+	float c = glm::dot(e_c, e_c) - collider.radius * collider.radius;
 
 	return smallest_root(a, b, c);
 }
@@ -161,9 +162,9 @@ std::tuple<glm::vec3, glm::vec3> transform_coordinate_space(glm::vec3 normal)
 
 
 
-bool intersection_occurs(Ray ray, Sphere sphere)
+bool intersection_occurs(Ray ray, SphereCollider collider)
 {
-	float distance = collision_distance(ray, sphere);
+	float distance = collision_distance(ray, collider);
 
 	if(distance <= 1.0f || distance == INFINITY)
 	{

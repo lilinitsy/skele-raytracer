@@ -94,11 +94,7 @@ Scene parseScene(string fileName)
             float   ambR, ambG, ambB,
                     diffR, diffG, diffB,
                     specR, specG, specB, phongCos,
-                    tranR, tranG, tranB, ior; // hwk 2 will ignore these 4
-            /** spec's should be used to determine the colour
-                of a highlight and the contribution of the
-                reflected ray.
-            **/
+                    tranR, tranG, tranB, ior;
 
             sscanf(line, "material %f %f %f %f %f %f %f %f %f %f %f %f %f %f",
                             &ambR, &ambG, &ambB, &diffR, &diffG, &diffB, &specR, &specG, &specB, &phongCos, &tranR, &tranG, &tranB, &ior);
@@ -169,8 +165,15 @@ Scene parseScene(string fileName)
         else if(strcmp(command, "output_image") == 0)
         { //If the command is an output_image command
             char outFile[1024];
-            sscanf(line,"output_image %s", outFile);
+            sscanf(line, "output_image %s", outFile);
             printf("Render to file named: %s\n", outFile);
+        }
+
+        else if(strcmp(command, "spherical_fog") == 0)
+        {
+            float x, y, z, rad, r, g, b, s, abso;
+            sscanf(line, "fog %f %f %f %f %f %f %f %f %f", &x, &y, &z, &rad, &r, &g, &b, &s, &abso);
+            scene.spherical_fog.push_back(SphericalFog(s, abso, glm::vec3(r, g, b), rad, glm::vec3(x, y, z)));
         }
 
         else

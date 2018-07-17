@@ -5,37 +5,33 @@
 
 #include "glm/glm.hpp"
 #include "glm/gtx/string_cast.hpp"
+
+#include "SphereCollider.h"
 #include "material.h"
 
 struct Sphere
 {
-	glm::vec3 position;
-	float radius;
+	SphereCollider collider;
 	Material material;
 
 	Sphere()
 	{
-		position = glm::vec3(0, 0, 0);
-		radius = 1;
+		collider.position = glm::vec3(0, 0, 0);
+		collider.radius = 1;
 		material = Material();
 	}
 
 	Sphere(glm::vec3 pos, float rad, Material mat)
 	{
-		position = pos;
-		radius = rad;
+		collider.position = pos;
+		collider.radius = rad;
 		material = mat;
-	}
-
-	glm::vec3 get_Center()
-	{
-		return position;
 	}
 
 	void to_string()
 	{
-		std::cout << "Position: " << glm::to_string(position) << std::endl
-					<< "radius: " << radius << std::endl;
+		std::cout << "Position: " << glm::to_string(collider.position) << std::endl
+					<< "radius: " << collider.radius << std::endl;
 		material.to_string();
 	}
 };

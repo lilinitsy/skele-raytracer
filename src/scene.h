@@ -1,10 +1,13 @@
-#pragma once
+#ifndef SCENE_H
+#define SCENE_H
 
 #include <string>
 #include <vector>
-#include "shapes.h"
+
 #include "lights.h"
 #include "camera.h"
+#include "Fog.h"
+#include "shapes.h"
 
 
 struct Scene
@@ -17,6 +20,7 @@ struct Scene
 	AmbientLight ambient_light = AmbientLight();
 
 	Camera camera;
+	std::vector<SphericalFog> spherical_fog;
 	glm::vec3 background;
 	int maxDepth = 1;
 	bool use_shadows = false;
@@ -24,3 +28,5 @@ struct Scene
 
 void toString(Scene &scene);
 Scene parseScene(std::string fileName);
+
+#endif
