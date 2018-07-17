@@ -175,4 +175,15 @@ bool intersection_occurs(Ray ray, SphereCollider collider)
 }
 
 
+glm::vec3 scattering_phase_function(glm::vec3 direction, float scattering)
+{
+	// keep it scattering in same general direction
+	float x = -1.0f + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (1 + 1));
+	float y = -1.0f + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (1 + 1));
+	float z = -1.0f + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (1 + 1));
+
+	return glm::vec3(direction.x + x * scattering, direction.y + y * scattering, direction.z + z * scattering);
+}
+
+
 #endif

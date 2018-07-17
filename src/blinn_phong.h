@@ -15,21 +15,62 @@ namespace bp
 		return colour;
 	}
 
+	glm::vec3 spherical_fog_shading(PointLight light, SphericalFog fog, Sphere sphere, glm::vec3 light_direction, glm::vec3 intersection_point, glm::vec3 norm)
+	{
+		float distance = glm::length(sphere.collider.position - light.position);
+		if(distance > 2 * fog.collider.radius)
+		{
+			distance = 2 * fog.collider.radius;
+		}
+
+		float probability_no_interaction = exp(-1.0f * distance * (fog.absorption + fog.scattering));
+		float random_num = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+		if(random_num > probability_no_interaction)
+		{
+			distance = glm::length(light.position - intersection_point);
+			float intensity = 1.0f / powf(glm::length(distance), 2.0f);
+
+			return sphere.material.diffuse * light.colour * intensity * std::max(0.0f, glm::dot(norm, light_direction));
+		}
+
+		glm::vec3 new_light_direction = scattering_phase_function(light_direction, fog.scattering);
+		return fog.albedo * light.colour * std::max(0.0f, glm::dot(norm, new_light_direction));
+	}
 
 	glm::vec3 diffuse_shading(Scene scene, Sphere sphere, glm::vec3 intersection_point, glm::vec3 norm)
 	{
 		glm::vec3 colour = glm::vec3(0.0f, 0.0f, 0.0f);
-
+		// handle fog in difffuse and specular, maybe?
 		for(unsigned int i = 0; i < scene.point_lights.size(); i++)
 		{
 			if(!scene.use_shadows || !shadow(scene, intersection_point, scene.point_lights[i]))
 			{
 				glm::vec3 light_direction = glm::normalize(scene.point_lights[i].position - intersection_point);
 
-				float distance = glm::length(scene.point_lights[i].position - intersection_point);
-				float intensity = 1.0f / powf(glm::length(distance), 2.0f);
+				if(scene.spherical_fog.size() > 0)
+				{
+					for(int j = 0; j < scene.spherical_fog.size(); j++)
+					{
+						colour += spherical_fog_shading(scene.point_lights[i], scene.spherical_fog[j], sphere, light_direction, intersection_point, norm);
+					}
+				}
 
-				colour += sphere.material.diffuse * scene.point_lights[i].colour * intensity * std::max(0.0f, glm::dot(norm, light_direction));
+				else
+				{
+					float distance = glm::length(scene.point_lights[i].position - intersection_point);
+					float intensity = 1.0f / powf(glm::length(distance), 2.0f);
+
+					colour += sphere.material.diffuse * scene.point_lights[i].colour * intensity * std::max(0.0f, glm::dot(norm, light_direction));
+				}
+			}
+		}
+
+		for(unsigned int i = 0; i < scene.directional_lights.size(); i++)
+		{
+			if(!scene.use_shadows || !shadow(scene, intersection_point, scene.directional_lights[i]))
+			{
+				glm::vec3 light_direction = glm::normalize(scene.directional_lights[i].direction);
+				colour += sphere.material.diffuse * scene.directional_lights[i].colour * std::max(0.0f, glm::dot(norm, light_direction));
 			}
 		}
 
@@ -49,10 +90,21 @@ namespace bp
 				glm::vec3 light_direction = glm::normalize(scene.point_lights[i].position - intersection_point);
 				glm::vec3 half_vector = (view_direction + light_direction) / glm::length(view_direction + light_direction);
 
-				float distance = glm::length(scene.point_lights[i].position - intersection_point);
-				float intensity = 1.0f / powf(glm::length(distance), 2.0f);
+				if(scene.spherical_fog.size() > 0)
+				{
+					for(int j = 0; j < scene.spherical_fog.size(); j++)
+					{
+						colour += spherical_fog_shading(scene.point_lights[i], scene.spherical_fog[j], sphere, light_direction, intersection_point, norm);
+					}
+				}
 
-				colour += sphere.material.specular * scene.point_lights[i].colour * intensity * powf(std::max(0.0f, glm::dot(norm, half_vector)), sphere.material.power);
+				else
+				{
+					float distance = glm::length(scene.point_lights[i].position - intersection_point);
+					float intensity = 1.0f / powf(glm::length(distance), 2.0f);
+
+					colour += sphere.material.specular * scene.point_lights[i].colour * intensity * powf(std::max(0.0f, glm::dot(norm, half_vector)), sphere.material.power);
+				}
 			}
 		}
 
@@ -63,11 +115,7 @@ namespace bp
 			{
 				glm::vec3 light_direction = glm::normalize(scene.directional_lights[i].direction);
 				glm::vec3 half_vector = (view_direction + light_direction) / glm::length(view_direction + light_direction);
-
-				float distance = glm::length(scene.point_lights[i].position - intersection_point);
-				float intensity = 1.0f / powf(glm::length(distance), 2.0f);
-
-				colour += sphere.material.specular * scene.point_lights[i].colour * intensity * powf(std::max(0.0f, glm::dot(norm, half_vector)), sphere.material.power);
+				colour += sphere.material.specular * scene.directional_lights[i].colour * powf(std::max(0.0f, glm::dot(norm, half_vector)), sphere.material.power);
 			}
 		}
 
