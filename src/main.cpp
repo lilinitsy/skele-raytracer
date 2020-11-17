@@ -50,7 +50,10 @@ void generate_rays_parallel(Scene scene, Options option, char *output)
 
 						glm::vec3 ray_dir(scene.camera.direction + u * scene.camera.right + v * scene.camera.up);
 						glm::normalize(ray_dir);
-						Ray ray = Ray(scene.camera.position, ray_dir);
+
+						Ray ray;
+						ray.position  = scene.camera.position;
+						ray.direction = ray_dir;
 
 						image[y][x] += shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces);
 					}
@@ -66,7 +69,10 @@ void generate_rays_parallel(Scene scene, Options option, char *output)
 
 				glm::vec3 ray_dir(scene.camera.direction + u * scene.camera.right + v * scene.camera.up);
 				glm::normalize(ray_dir);
-				Ray ray = Ray(scene.camera.position, ray_dir);
+
+				Ray ray;
+				ray.position  = scene.camera.position;
+				ray.direction = ray_dir;
 
 				image[y][x] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces);
 			}
@@ -134,7 +140,10 @@ void generate_rays(Scene scene, Options option, char *output)
 
 						glm::vec3 ray_dir(scene.camera.direction + u * scene.camera.right + v * scene.camera.up);
 						glm::normalize(ray_dir);
-						Ray ray = Ray(scene.camera.position, ray_dir);
+
+						Ray ray;
+						ray.position  = scene.camera.position;
+						ray.direction = ray_dir;
 
 						image[y][x] += shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces);
 					}
@@ -149,7 +158,10 @@ void generate_rays(Scene scene, Options option, char *output)
 
 				glm::vec3 ray_dir(scene.camera.direction + u * scene.camera.right + v * scene.camera.up);
 				glm::normalize(ray_dir);
-				Ray ray = Ray(scene.camera.position, ray_dir);
+
+				Ray ray;
+				ray.position  = scene.camera.position;
+				ray.direction = ray_dir;
 
 				image[y][x] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces);
 			}

@@ -42,7 +42,9 @@ struct Options
 bool shadow(Scene scene, glm::vec3 intersection_point, PointLight point_light)
 {
 	glm::vec3 direction = glm::normalize(point_light.position - intersection_point);
-	Ray ray(intersection_point + 0.000001f, direction);
+	Ray ray;
+	ray.position  = intersection_point + 0.000001f;
+	ray.direction = direction;
 
 	for(unsigned int i = 0; i < scene.spheres.size(); i++)
 	{
@@ -58,7 +60,9 @@ bool shadow(Scene scene, glm::vec3 intersection_point, PointLight point_light)
 bool shadow(Scene scene, glm::vec3 intersection_point, DirectionalLight directional_light)
 {
 	glm::vec3 direction = glm::normalize(directional_light.direction);
-	Ray ray(intersection_point + 0.000001f, direction);
+	Ray ray;
+	ray.position  = intersection_point + 0.000001f;
+	ray.direction = direction;
 
 	for(unsigned int i = 0; i < scene.spheres.size(); i++)
 	{

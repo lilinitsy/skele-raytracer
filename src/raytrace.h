@@ -55,13 +55,18 @@ glm::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_sphere, g
 			if(fr < 1)
 			{
 				glm::vec3 refraction_ray_direction = bp::refraction(ray.direction, intersection_point_normal, intersected_sphere);
-				Ray refracted_ray				   = Ray(intersection_point, refraction_ray_direction);
+
+				Ray refracted_ray;
+				refracted_ray.position			   = intersection_point;
+				refracted_ray.direction			   = refraction_ray_direction;
 
 				refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces);
 			}
 
 			glm::vec3 reflected_ray_direction = bp::reflect_direction(light_direction, intersection_point_normal);
-			Ray reflected_ray				  = Ray(intersection_point, reflected_ray_direction);
+			Ray reflected_ray;
+			reflected_ray.position	= intersection_point;
+			reflected_ray.direction = reflected_ray_direction;
 			reflection_colour += (1 - fr) * intersected_sphere.material.specular * shade(reflected_ray, scene, depth - 1, monte_carlo, num_path_traces);
 		}
 
@@ -72,13 +77,17 @@ glm::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_sphere, g
 			if(fr < 1)
 			{
 				glm::vec3 refraction_ray_direction = bp::refraction(ray.direction, intersection_point_normal, intersected_sphere);
-				Ray refracted_ray				   = Ray(intersection_point, refraction_ray_direction);
+				Ray refracted_ray;
+				refracted_ray.position	= intersection_point;
+				refracted_ray.direction = refraction_ray_direction;
 
 				refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces);
 			}
 
 			glm::vec3 reflected_ray_direction = bp::reflect_direction(light_direction, intersection_point_normal);
-			Ray reflected_ray				  = Ray(intersection_point, reflected_ray_direction);
+			Ray reflected_ray;
+			reflected_ray.position	= intersection_point;
+			reflected_ray.direction = reflected_ray_direction;
 			reflection_colour += (1 - fr) * intersected_sphere.material.specular * shade(reflected_ray, scene, depth - 1, monte_carlo, num_path_traces);
 		}
 	}
@@ -107,7 +116,9 @@ glm::vec3 montecarlo_global_illumination(Ray ray, Scene scene, Sphere intersecte
 									 sample.x * perp_to_both.y + sample.y * intersection_point_normal.y + sample.z * perp_to_both.y,
 									 sample.x * perp_to_both.z + sample.y * intersection_point_normal.z + sample.z * perp_to_both.z);
 
-		Ray indirect_ray = Ray(intersection_point + 0.00001f, sample_world_space);
+		Ray indirect_ray;
+		indirect_ray.position  = intersection_point + 0.00001f;
+		indirect_ray.direction = sample_world_space;
 		total_colour += (r1 * shade(indirect_ray, scene, depth - 1, true, num_rays)) / probability_dist;
 	}
 
