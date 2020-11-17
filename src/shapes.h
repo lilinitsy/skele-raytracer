@@ -14,20 +14,6 @@ struct Sphere
 	SphereCollider collider;
 	Material material;
 
-	Sphere()
-	{
-		collider.position = glm::vec3(0, 0, 0);
-		collider.radius	  = 1;
-		material		  = Material();
-	}
-
-	Sphere(glm::vec3 pos, float rad, Material mat)
-	{
-		collider.position = pos;
-		collider.radius	  = rad;
-		material		  = mat;
-	}
-
 	void to_string()
 	{
 		std::cout << "Position: " << glm::to_string(collider.position) << std::endl

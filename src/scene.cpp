@@ -48,7 +48,7 @@ Scene parseScene(string fileName)
 			float x, y, z, r;
 			sscanf(line, "sphere %f %f %f %f", &x, &y, &z, &r);
 			printf("Sphere as position (%f,%f,%f) with radius %f\n", x, y, z, r);
-			Sphere sphere = Sphere(glm::vec3(x, y, z), r, mat);
+			Sphere sphere;
 			sphere.collider.position = glm::vec3(x, y, z);
 			sphere.collider.radius = r;
 			sphere.material = mat;
