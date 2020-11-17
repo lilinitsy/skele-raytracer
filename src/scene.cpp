@@ -49,6 +49,9 @@ Scene parseScene(string fileName)
 			sscanf(line, "sphere %f %f %f %f", &x, &y, &z, &r);
 			printf("Sphere as position (%f,%f,%f) with radius %f\n", x, y, z, r);
 			Sphere sphere = Sphere(glm::vec3(x, y, z), r, mat);
+			sphere.collider.position = glm::vec3(x, y, z);
+			sphere.collider.radius = r;
+			sphere.material = mat;
 
 			scene.spheres.push_back(sphere);
 		}
@@ -99,10 +102,13 @@ Scene parseScene(string fileName)
 				   &ambR, &ambG, &ambB, &diffR, &diffG, &diffB, &specR, &specG, &specB, &phongCos, &tranR, &tranG, &tranB, &ior);
 			printf("material properties with ambient colour (%f, %f, %f), diffuse colour (%f, %f, %f), specular colour (%f, %f, %f), phong Cosine power %f, transmissive colour (%f, %f, %f), index of refraction %f\n",
 				   ambR, ambG, ambB, diffR, diffG, diffB, specR, specG, specB, phongCos, tranR, tranG, tranB, ior);
-			mat = Material(glm::vec3(ambR, ambG, ambB),
-						   glm::vec3(diffR, diffG, diffB),
-						   glm::vec3(specR, specG, specB),
-						   glm::vec3(tranR, tranG, tranB), phongCos, ior);
+			
+			mat.ambient = glm::vec3(ambR, ambG, ambB);
+			mat.diffuse = glm::vec3(diffR, diffG, diffB);
+			mat.specular = glm::vec3(specR, specG, specB);
+			mat.transmissive = glm::vec3(tranR, tranG, tranB);
+			mat.power = phongCos;
+			mat.ior = ior;
 		}
 
 		else if(strcmp(command, "directional_light") == 0)
@@ -140,7 +146,7 @@ Scene parseScene(string fileName)
 			PointLight point_light;
 			point_light.position = glm::vec3(x, y, z);
 			point_light.colour = glm::vec3(r, g, b);
-			
+
 			printf("Point light colour (%f, %f, %f), located at (%f, %f, %f)\n",
 				   point_light.colour.r, point_light.colour.g, point_light.colour.b,
 				   point_light.position.x, point_light.position.y, point_light.position.z);

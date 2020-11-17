@@ -8,33 +8,13 @@
 
 struct Material
 {
-	glm::vec3 ambient;
-	glm::vec3 diffuse;
-	glm::vec3 specular;
-	glm::vec3 transmissive;
+	glm::vec3 ambient= glm::vec3(0, 0, 0);
+	glm::vec3 diffuse = glm::vec3(0, 0, 0);
+	glm::vec3 specular = glm::vec3(0, 0, 0);
+	glm::vec3 transmissive = glm::vec3(0, 0, 0);
 
-	float power;
-	float ior;
-
-	Material()
-	{
-		ambient		 = glm::vec3(0, 0, 0);
-		diffuse		 = glm::vec3(0, 0, 0);
-		specular	 = glm::vec3(0, 0, 0);
-		transmissive = glm::vec3(0, 0, 0);
-		power		 = 1;
-		ior			 = 1;
-	}
-
-	Material(glm::vec3 amb, glm::vec3 diff, glm::vec3 spec, glm::vec3 trans, float p, float io)
-	{
-		ambient		 = amb;
-		diffuse		 = diff;
-		specular	 = spec;
-		transmissive = trans;
-		power		 = p;
-		ior			 = io;
-	}
+	float power = 1.0f;
+	float ior = 1.0f;
 
 	void to_string()
 	{

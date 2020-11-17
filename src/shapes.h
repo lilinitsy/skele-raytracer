@@ -47,11 +47,6 @@ struct Triangle
 	glm::vec3 vertex_three;
 
 	Material materail;
-
-
-	Triangle()
-	{
-	}
 };
 
 
