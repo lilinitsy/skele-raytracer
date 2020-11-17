@@ -16,17 +16,17 @@ struct SphericalFog
 
 	SphericalFog()
 	{
-		scattering = 0;
-		albedo = glm::vec3(0.0f, 0.0f, 0.0f);
+		scattering		  = 0;
+		albedo			  = glm::vec3(0.0f, 0.0f, 0.0f);
 		collider.position = glm::vec3(0.0f, 0.0f, 0.0f);
 	}
 
 	SphericalFog(float s, float abso, glm::vec3 a, float r, glm::vec3 p)
 	{
-		scattering = s;
-		absorption = abso;
-		albedo = a;
-		collider.radius = r;
+		scattering		  = s;
+		absorption		  = abso;
+		albedo			  = a;
+		collider.radius	  = r;
 		collider.position = p;
 	}
 };

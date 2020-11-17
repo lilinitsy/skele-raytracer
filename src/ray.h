@@ -12,13 +12,13 @@ struct Ray
 
 	Ray()
 	{
-		position = glm::vec3(0, 0, 0);
+		position  = glm::vec3(0, 0, 0);
 		direction = glm::vec3(0, 0, 0);
 	}
 
 	Ray(glm::vec3 pos, glm::vec3 dir)
 	{
-		position = pos;
+		position  = pos;
 		direction = glm::normalize(dir);
 	}
 };

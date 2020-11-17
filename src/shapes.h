@@ -17,21 +17,21 @@ struct Sphere
 	Sphere()
 	{
 		collider.position = glm::vec3(0, 0, 0);
-		collider.radius = 1;
-		material = Material();
+		collider.radius	  = 1;
+		material		  = Material();
 	}
 
 	Sphere(glm::vec3 pos, float rad, Material mat)
 	{
 		collider.position = pos;
-		collider.radius = rad;
-		material = mat;
+		collider.radius	  = rad;
+		material		  = mat;
 	}
 
 	void to_string()
 	{
 		std::cout << "Position: " << glm::to_string(collider.position) << std::endl
-					<< "radius: " << collider.radius << std::endl;
+				  << "radius: " << collider.radius << std::endl;
 		material.to_string();
 	}
 };
@@ -51,7 +51,6 @@ struct Triangle
 
 	Triangle()
 	{
-
 	}
 };
 

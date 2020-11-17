@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
-#include "lights.h"
-#include "camera.h"
 #include "Fog.h"
+#include "camera.h"
+#include "lights.h"
 #include "shapes.h"
 
 
@@ -22,7 +22,7 @@ struct Scene
 	Camera camera;
 	std::vector<SphericalFog> spherical_fog;
 	glm::vec3 background;
-	int maxDepth = 1;
+	int maxDepth	 = 1;
 	bool use_shadows = false;
 };
 

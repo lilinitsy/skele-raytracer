@@ -5,11 +5,11 @@
 #include <cmath>
 #include <tuple>
 
-#include "ray.h"
-#include "shapes.h"
-#include "lights.h"
-#include "scene.h"
 #include "SphereCollider.h"
+#include "lights.h"
+#include "ray.h"
+#include "scene.h"
+#include "shapes.h"
 
 
 float euclidean_distance(int x, int y);
@@ -25,17 +25,17 @@ bool shadow(Scene scene, glm::vec3 intersection_point, DirectionalLight directio
 
 struct Options
 {
-    bool monte_carlo = false;
-    bool visual = true;
-    float fov = 60;
-    short num_path_traces = 1;
-    short grid_size = 0;
-    int max_depth = 3;
+	bool monte_carlo	  = false;
+	bool visual			  = true;
+	float fov			  = 60;
+	short num_path_traces = 1;
+	short grid_size		  = 0;
+	int max_depth		  = 3;
 
-    void to_string()
-    {
-        printf("\n\nMonte carlo: %d\nvisual display: %d\nfov: %f\nnum paths traced: %d\nsupersample grid size: %d\nmax depth: %d\n", monte_carlo, visual, fov, num_path_traces, grid_size, max_depth);
-    }
+	void to_string()
+	{
+		printf("\n\nMonte carlo: %d\nvisual display: %d\nfov: %f\nnum paths traced: %d\nsupersample grid size: %d\nmax depth: %d\n", monte_carlo, visual, fov, num_path_traces, grid_size, max_depth);
+	}
 };
 
 
@@ -109,9 +109,9 @@ float smallest_root(float a, float b, float c)
 float collision_distance(Ray ray, SphereCollider collider)
 {
 	glm::vec3 e_c = ray.position - collider.position;
-	float a = glm::dot(ray.direction, ray.direction);
-	float b = 2 * glm::dot(ray.direction, e_c);
-	float c = glm::dot(e_c, e_c) - collider.radius * collider.radius;
+	float a		  = glm::dot(ray.direction, ray.direction);
+	float b		  = 2 * glm::dot(ray.direction, e_c);
+	float c		  = glm::dot(e_c, e_c) - collider.radius * collider.radius;
 
 	return smallest_root(a, b, c);
 }

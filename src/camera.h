@@ -15,19 +15,19 @@ struct Camera
 
 	Camera()
 	{
-		position = glm::vec3(0, 0, 0);
+		position  = glm::vec3(0, 0, 0);
 		direction = glm::vec3(0, 0, 0);
-		up = glm::vec3(0, 0, 0);
-		right = glm::cross(direction * -1.0f, up);
+		up		  = glm::vec3(0, 0, 0);
+		right	  = glm::cross(direction * -1.0f, up);
 	}
 
 	Camera(glm::vec3 pos, glm::vec3 dir, glm::vec3 u, float h)
 	{
-		position = pos;
-		direction = dir;
-		up = u;
+		position		  = pos;
+		direction		  = dir;
+		up				  = u;
 		half_height_angle = h;
-		right = glm::cross(direction * -1.0f, up);
+		right			  = glm::cross(direction * -1.0f, up);
 	}
 };
 
