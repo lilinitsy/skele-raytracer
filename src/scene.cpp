@@ -123,7 +123,9 @@ Scene parseScene(string fileName)
 				b = 1;
 			}
 
-			DirectionalLight directional_light = DirectionalLight(glm::vec3(x, y, z), glm::vec3(r, g, b));
+			DirectionalLight directional_light;
+			directional_light.direction = glm::vec3(x, y, z);
+			directional_light.colour = glm::vec3(r, g, b);
 			printf("Directional light colour (%f, %f %f) with direction (%f, %f, %f)\n",
 				   directional_light.colour.r, directional_light.colour.g, directional_light.colour.b,
 				   directional_light.direction.x, directional_light.direction.x, directional_light.direction.z);
@@ -135,7 +137,10 @@ Scene parseScene(string fileName)
 			sscanf(line, "point_light %f %f %f %f %f %f", &r, &g, &b, &x, &y, &z);
 			printf("point light colour (%f, %f, %f), located at (%f, %f, %f)\n", r, g, b, x, y, z);
 
-			PointLight point_light = PointLight(glm::vec3(x, y, z), glm::vec3(r, g, b));
+			PointLight point_light;
+			point_light.position = glm::vec3(x, y, z);
+			point_light.colour = glm::vec3(r, g, b);
+			
 			printf("Point light colour (%f, %f, %f), located at (%f, %f, %f)\n",
 				   point_light.colour.r, point_light.colour.g, point_light.colour.b,
 				   point_light.position.x, point_light.position.y, point_light.position.z);

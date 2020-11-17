@@ -17,7 +17,7 @@ struct Scene
 	std::vector<Triangle> triangles;
 	std::vector<PointLight> point_lights;
 	std::vector<DirectionalLight> directional_lights;
-	AmbientLight ambient_light = AmbientLight();
+	AmbientLight ambient_light;
 
 	Camera camera;
 	std::vector<SphericalFog> spherical_fog;
