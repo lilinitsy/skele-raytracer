@@ -111,6 +111,7 @@ void generate_rays(Scene scene, Options option, char *output)
 	SDL_RenderPresent(renderer);
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
+	// The output image that will be written to
 	glm::vec3 **image = new glm::vec3 *[scene.height];
 
 	for(int i = 0; i < scene.height; i++)
@@ -123,21 +124,27 @@ void generate_rays(Scene scene, Options option, char *output)
 	{
 		for(int x = 0; x < scene.width; x++)
 		{
+			// Definitions for what ray corresponds to what pixel
 			float inv_width	   = 1 / float(scene.width);
 			float inv_height   = 1 / float(scene.height);
 			float aspect_ratio = scene.width / float(scene.height);
 			float angle		   = tan(M_PI * 0.5 * option.fov / 180.);
 
+			// Code for without a grid_size operates similarily without r.
 			if(option.grid_size > 0)
 			{
 				for(int i = 0; i < option.grid_size; i++)
 				{
 					for(int j = 0; j < option.grid_size; j++)
 					{
+						// r adds some jitter to the ray that we're going to cast
+						// u and v are basically the x / y coordinates transformed by the angle (fov basically) and the screen's aspect ratio
 						float r = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 						float u = (2 * ((x + r) * inv_width) - 1) * angle * aspect_ratio;
 						float v = (1 - 2 * ((y + r) * inv_height)) * angle;
 
+						// Create the ray's direction vector as a combination of where our camera is looking, and the u & v pixel offsets
+						// This will cast out to all pixels in the screen as these loops iterate and construct new u's and v's
 						glm::vec3 ray_dir(scene.camera.direction + u * scene.camera.right + v * scene.camera.up);
 						glm::normalize(ray_dir);
 
@@ -145,6 +152,7 @@ void generate_rays(Scene scene, Options option, char *output)
 						ray.position  = scene.camera.position;
 						ray.direction = ray_dir;
 
+						// Iteratively add the results to shade for each grid computation to [y][x] in image
 						image[y][x] += shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces);
 					}
 				}
@@ -163,6 +171,7 @@ void generate_rays(Scene scene, Options option, char *output)
 				ray.position  = scene.camera.position;
 				ray.direction = ray_dir;
 
+				// Output the results of shade to the image at index [y][x]
 				image[y][x] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces);
 			}
 			SDL_SetRenderDrawColor(renderer, (unsigned char) (std::min(float(1), image[y][x].x) * 255),
