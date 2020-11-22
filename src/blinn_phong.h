@@ -9,6 +9,7 @@
 
 namespace bp
 {
+	// Add in a uniform colour across the scene for ambient lighting
 	glm::vec3 ambient_shading(Scene scene, Sphere sphere)
 	{
 		glm::vec3 colour = scene.ambient_light.colour * sphere.material.ambient;
@@ -17,12 +18,14 @@ namespace bp
 
 	glm::vec3 spherical_fog_shading(PointLight light, SphericalFog fog, Sphere sphere, glm::vec3 light_direction, glm::vec3 intersection_point, glm::vec3 norm)
 	{
+		// Clamp the distance; I don't remember why this was done
 		float distance = glm::length(sphere.collider.position - light.position);
 		if(distance > 2 * fog.collider.radius)
 		{
 			distance = 2 * fog.collider.radius;
 		}
 
+		// Fog relies on a probabalistic model, so define that here and decide whether to use fog or not here
 		float probability_no_interaction = exp(-1.0f * distance * (fog.absorption + fog.scattering));
 		float random_num				 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 		if(random_num > probability_no_interaction)
@@ -30,13 +33,17 @@ namespace bp
 			distance		= glm::length(light.position - intersection_point);
 			float intensity = 1.0f / powf(glm::length(distance), 2.0f);
 
+			// If it's used, multiply the sphere material's diffuse property by the light colour and intensity, and then
+			// max it with the dot product of the normal vector of the sphere and the light's direction
 			return sphere.material.diffuse * light.colour * intensity * std::max(0.0f, glm::dot(norm, light_direction));
 		}
 
+		// Otherwise, just run the standard phase function to take the fog into account,
 		glm::vec3 new_light_direction = scattering_phase_function(light_direction, fog.scattering);
 		return fog.albedo * light.colour * std::max(0.0f, glm::dot(norm, new_light_direction));
 	}
 
+	// Add in the diffuse shading based on material properties of the sphere
 	glm::vec3 diffuse_shading(Scene scene, Sphere sphere, glm::vec3 intersection_point, glm::vec3 norm)
 	{
 		glm::vec3 colour = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -47,6 +54,7 @@ namespace bp
 			{
 				glm::vec3 light_direction = glm::normalize(scene.point_lights[i].position - intersection_point);
 
+				// Iteratively get fog colour
 				if(scene.spherical_fog.size() > 0)
 				{
 					for(int j = 0; j < scene.spherical_fog.size(); j++)
@@ -57,6 +65,7 @@ namespace bp
 
 				else
 				{
+					// without fog, make the colour the same as the if() case in the spherical_fog equation
 					float distance	= glm::length(scene.point_lights[i].position - intersection_point);
 					float intensity = 1.0f / powf(glm::length(distance), 2.0f);
 
@@ -87,6 +96,7 @@ namespace bp
 		{
 			if(!scene.use_shadows || !shadow(scene, intersection_point, scene.point_lights[i]))
 			{
+				// This is an interpretation of the specular highlight vectors
 				glm::vec3 light_direction = glm::normalize(scene.point_lights[i].position - intersection_point);
 				glm::vec3 half_vector	  = (view_direction + light_direction) / glm::length(view_direction + light_direction);
 
@@ -103,6 +113,7 @@ namespace bp
 					float distance	= glm::length(scene.point_lights[i].position - intersection_point);
 					float intensity = 1.0f / powf(glm::length(distance), 2.0f);
 
+					// Specular lighting equation; iteratively add it for every point light
 					colour += sphere.material.specular * scene.point_lights[i].colour * intensity * powf(std::max(0.0f, glm::dot(norm, half_vector)), sphere.material.power);
 				}
 			}
