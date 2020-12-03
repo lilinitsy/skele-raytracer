@@ -178,6 +178,40 @@ bool intersection_occurs(Ray ray, SphereCollider collider)
 	return true;
 }
 
+bool triangle_intersection_occurs(Ray ray, glm::vec3 &v0, glm::vec3 &v1, glm::vec3 &v2, float &t, float &u, float &v)
+{
+	glm::vec3 v0v1 = v1 - v0;
+	glm::vec3 v0v2 = v2 - v0;
+	glm::vec3 v1v2 = v2 - v1;
+	glm::vec3 p	   = glm::cross(ray.direction, v0v2);
+	float d		   = glm::dot(v0v1, p);
+
+	// ray parallel to triangle
+	if(fabs(d) < 0.00001f)
+	{
+		return false;
+	}
+
+	float inverse = 1.0f / d;
+
+	glm::vec3 t_vector = ray.position - v0;
+	u				   = inverse * glm::dot(-t_vector, p);
+	if(u < 0 || u > 1)
+	{
+		return false;
+	}
+
+	glm::vec3 q = glm::cross(t_vector, v0v1);
+	v			= glm::dot(ray.direction, q) * inverse;
+	if(v < 0 || u + v > 1)
+	{
+		return false;
+	}
+
+	t = glm::dot(v0v2, q) * inverse;
+	return true;
+}
+
 
 glm::vec3 scattering_phase_function(glm::vec3 direction, float scattering)
 {
