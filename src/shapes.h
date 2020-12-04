@@ -25,14 +25,11 @@ struct Sphere
 
 struct Triangle
 {
-	glm::vec4 v0_to_v1;
-	glm::vec4 v0_to_v2;
+	glm::vec3 v0;
+	glm::vec3 v1;
+	glm::vec3 v2;
 
-	glm::vec3 vertex_one;
-	glm::vec3 vertex_two;
-	glm::vec3 vertex_three;
-
-	Material materail;
+	Material material;
 };
 
 

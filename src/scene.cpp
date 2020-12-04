@@ -61,7 +61,7 @@ Scene parseScene(string fileName)
 			float x, y, z;
 			sscanf(line, "vertex %f %f %f", &x, &y, &z);
 			printf("Vertex as position (%f, %f, %f)\n");
-			scene.vertices.push_back(glm::vec3(x, y, z));
+			scene.vertices.push_back(glm::vec3(x, y, z));	
 		}
 
 		else if(strcmp(command, "triangle") == 0)
@@ -69,7 +69,16 @@ Scene parseScene(string fileName)
 			float v0, v1, v2;
 			sscanf(line, "triangle %f %f %f", &v0, &v1, &v2);
 			printf("Vertex as position (%f, %f, %f)\n");
-			scene.triangles.push_back(glm::vec3(v0, v1, v2));
+			glm::vec3 first_vert = scene.vertices[v0];
+			glm::vec3 second_vert = scene.vertices[v1];
+			glm::vec3 third_vert = scene.vertices[v2];
+
+			Triangle triangle;
+			triangle.v0 = first_vert;
+			triangle.v1 = second_vert;
+			triangle.v2 = third_vert;
+			triangle.material = mat;
+			scene.triangles.push_back(triangle);
 		}
 
 		else if(strcmp(command, "camera") == 0)

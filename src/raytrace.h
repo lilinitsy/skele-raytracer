@@ -143,7 +143,7 @@ glm::vec3 shade(Ray ray, Scene scene, int depth, bool monte_carlo, short num_pat
 		return glm::vec3(0.0f, 0.0f, 0.0f);
 	}
 
-	// Check if an intersection occurs and if it does,
+	// Check if a sphere intersection occurs and if it does,
 	// get the distance and parse that and the intersected object
 	float min_distance = INFINITY;
 	Sphere intersected_sphere;
@@ -163,36 +163,66 @@ glm::vec3 shade(Ray ray, Scene scene, int depth, bool monte_carlo, short num_pat
 		}
 	}
 
+	// Check if a triangle intersection occurs, and if it does,
+	// get the distance and parse that and the intersected object
+	Triangle intersected_triangle;
+	bool hit_a_triangle = false;
+	for(unsigned int i = 0; i < scene.triangles.size(); i++)
+	{
+		float t;
+		float u;
+		float v;
+		if(triangle_intersection_occurs(ray, scene.triangles[i], t, u, v))
+		{
+			if(t < min_distance)
+			{
+				min_distance = t;
+				hit_a_sphere = false;
+				hit_a_triangle = true;
+				intersected_triangle = scene.triangles[i];
+			}
+		}
+	}
+
 	// If no sphere was hit, then the background was hit, so return that colour
-	if(!hit_a_sphere)
+	if(!hit_a_sphere && !hit_a_triangle)
 	{
 		return scene.background;
 	}
 
-
-	// This is just writing out the standard raytracing equations and solving for the smallest roots
-	glm::vec3 e_c = ray.position - intersected_sphere.collider.position;
-	float a		  = glm::dot(ray.direction, ray.direction);
-	float b		  = 2 * glm::dot(ray.direction, e_c);
-	float c		  = glm::dot(e_c, e_c) - intersected_sphere.collider.radius * intersected_sphere.collider.radius;
-	float t		  = smallest_root(a, b, c);
-
-	// Calculating the intersection point and the normal; the normal doesn't really need to be calculated seperately
-	glm::vec3 intersection_point		= ray.position + ray.direction * t;
-	glm::vec3 intersection_point_normal = glm::normalize(intersection_point - intersected_sphere.collider.position);
-
-	// Get the direct illumination value; this is light that shines from light sources rather than the global illumination implementation
-	glm::vec3 direct_colour = direct_illumination(ray, scene, intersected_sphere, intersection_point, intersection_point_normal, depth, monte_carlo, num_path_traces);
-
-	if(monte_carlo)
+	if(hit_a_sphere)
 	{
-		glm::vec3 indirect_colour = montecarlo_global_illumination(ray, scene, intersected_sphere, intersection_point, intersection_point_normal, depth, num_path_traces);
-		glm::vec3 total_colour	  = (direct_colour / (float) M_PI + 2.0f * indirect_colour) * intersected_sphere.material.diffuse;
+		// This is just writing out the standard raytracing equations and solving for the smallest roots
+		glm::vec3 e_c = ray.position - intersected_sphere.collider.position;
+		float a		  = glm::dot(ray.direction, ray.direction);
+		float b		  = 2 * glm::dot(ray.direction, e_c);
+		float c		  = glm::dot(e_c, e_c) - intersected_sphere.collider.radius * intersected_sphere.collider.radius;
+		float t		  = smallest_root(a, b, c);
 
-		return total_colour;
+		// Calculating the intersection point and the normal; the normal doesn't really need to be calculated seperately
+		glm::vec3 intersection_point		= ray.position + ray.direction * t;
+		glm::vec3 intersection_point_normal = glm::normalize(intersection_point - intersected_sphere.collider.position);
+
+		// Get the direct illumination value; this is light that shines from light sources rather than the global illumination implementation
+		glm::vec3 direct_colour = direct_illumination(ray, scene, intersected_sphere, intersection_point, intersection_point_normal, depth, monte_carlo, num_path_traces);
+
+		if(monte_carlo)
+		{
+			glm::vec3 indirect_colour = montecarlo_global_illumination(ray, scene, intersected_sphere, intersection_point, intersection_point_normal, depth, num_path_traces);
+			glm::vec3 total_colour	  = (direct_colour / (float) M_PI + 2.0f * indirect_colour) * intersected_sphere.material.diffuse;
+
+			return total_colour;
+		}
+
+		return direct_colour;
 	}
 
-	return direct_colour;
+	if(hit_a_triangle)
+	{
+		printf("HIT A TRIANGLE AT DISTANCE %f\n", min_distance);
+	}
+
+	return glm::vec3(0.0f, 0.0f, 0.0f);
 }
 
 #endif
