@@ -47,13 +47,29 @@ Scene parseScene(string fileName)
 		{ //If the command is a sphere command
 			float x, y, z, r;
 			sscanf(line, "sphere %f %f %f %f", &x, &y, &z, &r);
-			printf("Sphere as position (%f,%f,%f) with radius %f\n", x, y, z, r);
+			printf("Sphere as position (%f, %f, %f) with radius %f\n", x, y, z, r);
 			Sphere sphere;
 			sphere.collider.position = glm::vec3(x, y, z);
-			sphere.collider.radius = r;
-			sphere.material = mat;
+			sphere.collider.radius	 = r;
+			sphere.material			 = mat;
 
 			scene.spheres.push_back(sphere);
+		}
+
+		else if(strcmp(command, "vertex") == 0)
+		{
+			float x, y, z;
+			sscanf(line, "vertex %f %f %f", &x, &y, &z);
+			printf("Vertex as position (%f, %f, %f)\n");
+			scene.vertices.push_back(glm::vec3(x, y, z));
+		}
+
+		else if(strcmp(command, "triangle") == 0)
+		{
+			float v0, v1, v2;
+			sscanf(line, "triangle %f %f %f", &v0, &v1, &v2);
+			printf("Vertex as position (%f, %f, %f)\n");
+			scene.triangles.push_back(glm::vec3(v0, v1, v2));
 		}
 
 		else if(strcmp(command, "camera") == 0)
@@ -102,13 +118,13 @@ Scene parseScene(string fileName)
 				   &ambR, &ambG, &ambB, &diffR, &diffG, &diffB, &specR, &specG, &specB, &phongCos, &tranR, &tranG, &tranB, &ior);
 			printf("material properties with ambient colour (%f, %f, %f), diffuse colour (%f, %f, %f), specular colour (%f, %f, %f), phong Cosine power %f, transmissive colour (%f, %f, %f), index of refraction %f\n",
 				   ambR, ambG, ambB, diffR, diffG, diffB, specR, specG, specB, phongCos, tranR, tranG, tranB, ior);
-			
-			mat.ambient = glm::vec3(ambR, ambG, ambB);
-			mat.diffuse = glm::vec3(diffR, diffG, diffB);
-			mat.specular = glm::vec3(specR, specG, specB);
+
+			mat.ambient		 = glm::vec3(ambR, ambG, ambB);
+			mat.diffuse		 = glm::vec3(diffR, diffG, diffB);
+			mat.specular	 = glm::vec3(specR, specG, specB);
 			mat.transmissive = glm::vec3(tranR, tranG, tranB);
-			mat.power = phongCos;
-			mat.ior = ior;
+			mat.power		 = phongCos;
+			mat.ior			 = ior;
 		}
 
 		else if(strcmp(command, "directional_light") == 0)
@@ -131,7 +147,7 @@ Scene parseScene(string fileName)
 
 			DirectionalLight directional_light;
 			directional_light.direction = glm::vec3(x, y, z);
-			directional_light.colour = glm::vec3(r, g, b);
+			directional_light.colour	= glm::vec3(r, g, b);
 			printf("Directional light colour (%f, %f %f) with direction (%f, %f, %f)\n",
 				   directional_light.colour.r, directional_light.colour.g, directional_light.colour.b,
 				   directional_light.direction.x, directional_light.direction.x, directional_light.direction.z);
@@ -145,7 +161,7 @@ Scene parseScene(string fileName)
 
 			PointLight point_light;
 			point_light.position = glm::vec3(x, y, z);
-			point_light.colour = glm::vec3(r, g, b);
+			point_light.colour	 = glm::vec3(r, g, b);
 
 			printf("Point light colour (%f, %f, %f), located at (%f, %f, %f)\n",
 				   point_light.colour.r, point_light.colour.g, point_light.colour.b,

@@ -14,7 +14,9 @@ struct Scene
 {
 	int width = 1920, height = 1080; // used for res
 	std::vector<Sphere> spheres;
-	std::vector<Triangle> triangles;
+	std::vector<glm::vec3> vertices;
+	std::vector<glm::vec3> triangles; // for now, x y and z will all store an index of different vertices; will change to something cleaner after this is working
+	//std::vector<Triangle> triangles;
 	std::vector<PointLight> point_lights;
 	std::vector<DirectionalLight> directional_lights;
 	AmbientLight ambient_light;

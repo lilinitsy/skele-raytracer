@@ -61,8 +61,8 @@ glm::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_sphere, g
 				glm::vec3 refraction_ray_direction = bp::refraction(ray.direction, intersection_point_normal, intersected_sphere);
 
 				Ray refracted_ray;
-				refracted_ray.position			   = intersection_point;
-				refracted_ray.direction			   = refraction_ray_direction;
+				refracted_ray.position	= intersection_point;
+				refracted_ray.direction = refraction_ray_direction;
 
 				// Recursively call the shade function using the refracted ray, with one fewer depth
 				refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces);
@@ -143,7 +143,7 @@ glm::vec3 shade(Ray ray, Scene scene, int depth, bool monte_carlo, short num_pat
 		return glm::vec3(0.0f, 0.0f, 0.0f);
 	}
 
-	// Check if an intersection occurs and if it does, 
+	// Check if an intersection occurs and if it does,
 	// get the distance and parse that and the intersected object
 	float min_distance = INFINITY;
 	Sphere intersected_sphere;
