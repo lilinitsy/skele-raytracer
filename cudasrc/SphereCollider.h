@@ -1,14 +1,12 @@
 #ifndef SPHERECOLLIDER_H
 #define SPHERECOLLIDER_H
 
-
-#include "glm/glm.hpp"
-
+#include "vec3.h"
 
 struct SphereCollider
 {
-	glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
-	float radius	   = 1.0f;
+	vecmath::vec3 position = vecmath::vec3(0.0f, 0.0f, 0.0f);
+	float radius		   = 1.0f;
 };
 
 

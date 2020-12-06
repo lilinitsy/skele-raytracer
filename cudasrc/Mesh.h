@@ -1,16 +1,18 @@
 #ifdef MESH_H
 #define MESH_H
 
+#include "vec3.h"
+
 
 struct Mesh
 {
 	uint32_t num_triangles;
-	std::vector<glm::vec3> vertices; // P
-	std::vector<uint32_t> indices;	 // trisIndex
-	std::vector<glm::vec3> normals;	 // N
-	glm::vector<glm::vec2> uvs;		 // texcoords
+	std::vector<vecmath::vec3> vertices; // P
+	std::vector<uint32_t> indices;		 // trisIndex
+	std::vector<vecmath::vec3> normals;	 // N
+	std::vector<vecmath::vec2> uvs;		 // texcoords
 
-	Mesh(uint32_t num_faces, std::vector<glm::vec3> input_vertices, std::vector<glm::vec3> input_normals, std::vector<glm::vec2> texcoords, std::vector<uint32_t> face_indices, std::vector<uint32_t> vertex_indices)
+	Mesh(uint32_t num_faces, std::vector<vecmath::vec3> input_vertices, std::vector<vecmath::vec3> input_normals, std::vector<vecmath::vec2> texcoords, std::vector<uint32_t> face_indices, std::vector<uint32_t> vertex_indices)
 	{
 		uint32_t k			   = 0;
 		uint32_t highest_index = 0;
@@ -51,7 +53,7 @@ struct Mesh
 				uvs[l]	   = texcoords[l];
 				uvs[l + 1] = texcoords[k + j + 1];
 				uvs[l + 2] = texcoords[k + j + 2];
-				
+
 				l += 3;
 			}
 
@@ -59,7 +61,7 @@ struct Mesh
 		}
 	}
 
-	bool intersect(Ray ray, float &near, uint32_t &triangle_index, glm::vec3 uv)
+	bool intersect(Ray ray, float &near, uint32_t &triangle_index, vecmath::vec3 uv)
 	{
 		return false; // todo
 	}

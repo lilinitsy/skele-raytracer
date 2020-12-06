@@ -1,14 +1,12 @@
 #ifndef RAY_H
 #define RAY_H
 
-
-#include "glm/glm.hpp"
-
+#include "vec3.h"
 
 struct Ray
 {
-	glm::vec3 position	= glm::vec3(0.0f, 0.0f, 0.0f);
-	glm::vec3 direction = glm::vec3(0.0f, 0.0f, 0.0f);
+	vecmath::vec3 position	= vecmath::vec3(0.0f, 0.0f, 0.0f);
+	vecmath::vec3 direction = vecmath::vec3(0.0f, 0.0f, 0.0f);
 };
 
 #endif

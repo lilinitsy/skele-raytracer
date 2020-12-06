@@ -1,33 +1,31 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-
-#include "glm/glm.hpp"
-
+#include "vec3.h"
 
 struct Camera
 {
-	glm::vec3 position;
-	glm::vec3 direction;
-	glm::vec3 up;
-	glm::vec3 right;
+	vecmath::vec3 position;
+	vecmath::vec3 direction;
+	vecmath::vec3 up;
+	vecmath::vec3 right;
 	float half_height_angle;
 
 	Camera()
 	{
-		position  = glm::vec3(0, 0, 0);
-		direction = glm::vec3(0, 0, 0);
-		up		  = glm::vec3(0, 0, 0);
-		right	  = glm::cross(direction * -1.0f, up);
+		position  = vecmath::vec3(0, 0, 0);
+		direction = vecmath::vec3(0, 0, 0);
+		up		  = vecmath::vec3(0, 0, 0);
+		right	  = vecmath::cross(direction * -1.0f, up);
 	}
 
-	Camera(glm::vec3 pos, glm::vec3 dir, glm::vec3 u, float h)
+	Camera(vecmath::vec3 pos, vecmath::vec3 dir, vecmath::vec3 u, float h)
 	{
 		position		  = pos;
 		direction		  = dir;
 		up				  = u;
 		half_height_angle = h;
-		right			  = glm::cross(direction * -1.0f, up);
+		right			  = vecmath::cross(direction * -1.0f, up);
 	}
 };
 

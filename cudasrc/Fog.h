@@ -2,26 +2,24 @@
 #define FOG_H
 
 
-#include "glm/glm.hpp"
-
 #include "SphereCollider.h"
-
+#include "vec3.h"
 
 struct SphericalFog
 {
 	float scattering;
 	float absorption;
-	glm::vec3 albedo;
+	vecmath::vec3 albedo;
 	SphereCollider collider;
 
 	SphericalFog()
 	{
 		scattering		  = 0;
-		albedo			  = glm::vec3(0.0f, 0.0f, 0.0f);
-		collider.position = glm::vec3(0.0f, 0.0f, 0.0f);
+		albedo			  = vecmath::vec3(0.0f, 0.0f, 0.0f);
+		collider.position = vecmath::vec3(0.0f, 0.0f, 0.0f);
 	}
 
-	SphericalFog(float s, float abso, glm::vec3 a, float r, glm::vec3 p)
+	SphericalFog(float s, float abso, vecmath::vec3 a, float r, vecmath::vec3 p)
 	{
 		scattering		  = s;
 		absorption		  = abso;

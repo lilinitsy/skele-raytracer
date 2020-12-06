@@ -10,17 +10,17 @@
 #include "ray.h"
 #include "scene.h"
 #include "shapes.h"
-
+#include "vec3.h"
 
 float euclidean_distance(int x, int y);
 float smallest_root(float a, float b, float c);
 float collision_distance(Ray ray, SphereCollider collider);
 float intensity_of(PointLight light);
 float clamp(float a, float b, float input);
-std::tuple<glm::vec3, glm::vec3> transform_coordinate_space(glm::vec3 normal);
+std::tuple<vecmath::vec3, vecmath::vec3> transform_coordinate_space(vecmath::vec3 normal);
 bool intersection_occurs(Ray ray, SphereCollider collider);
-bool shadow(Scene scene, glm::vec3 intersection_point, PointLight point_light);
-bool shadow(Scene scene, glm::vec3 intersection_point, DirectionalLight directional_light);
+bool shadow(Scene scene, vecmath::vec3 intersection_point, PointLight point_light);
+bool shadow(Scene scene, vecmath::vec3 intersection_point, DirectionalLight directional_light);
 
 
 struct Options
@@ -39,9 +39,9 @@ struct Options
 };
 
 
-bool shadow(Scene scene, glm::vec3 intersection_point, PointLight point_light)
+bool shadow(Scene scene, vecmath::vec3 intersection_point, PointLight point_light)
 {
-	glm::vec3 direction = glm::normalize(point_light.position - intersection_point);
+	vecmath::vec3 direction = vecmath::normalize(point_light.position - intersection_point);
 	Ray ray;
 	ray.position  = intersection_point + 0.000001f;
 	ray.direction = direction;
@@ -57,9 +57,9 @@ bool shadow(Scene scene, glm::vec3 intersection_point, PointLight point_light)
 	return false;
 }
 
-bool shadow(Scene scene, glm::vec3 intersection_point, DirectionalLight directional_light)
+bool shadow(Scene scene, vecmath::vec3 intersection_point, DirectionalLight directional_light)
 {
-	glm::vec3 direction = glm::normalize(directional_light.direction);
+	vecmath::vec3 direction = vecmath::normalize(directional_light.direction);
 	Ray ray;
 	ray.position  = intersection_point + 0.000001f;
 	ray.direction = direction;
@@ -112,10 +112,10 @@ float smallest_root(float a, float b, float c)
 
 float collision_distance(Ray ray, SphereCollider collider)
 {
-	glm::vec3 e_c = ray.position - collider.position;
-	float a		  = glm::dot(ray.direction, ray.direction);
-	float b		  = 2 * glm::dot(ray.direction, e_c);
-	float c		  = glm::dot(e_c, e_c) - collider.radius * collider.radius;
+	vecmath::vec3 e_c = ray.position - collider.position;
+	float a			  = vecmath::dot(ray.direction, ray.direction);
+	float b			  = 2 * vecmath::dot(ray.direction, e_c);
+	float c			  = vecmath::dot(e_c, e_c) - collider.radius * collider.radius;
 
 	return smallest_root(a, b, c);
 }
@@ -124,7 +124,7 @@ float collision_distance(Ray ray, SphereCollider collider)
 
 float intensity_of(PointLight light)
 {
-	float intensity = 0.30f * light.colour.r + 0.59f * light.colour.g + 0.11f * light.colour.b;
+	float intensity = 0.30f * light.colour.x + 0.59f * light.colour.y + 0.11f * light.colour.z;
 	return intensity;
 }
 
@@ -145,21 +145,21 @@ float clamp(float a, float b, float input)
 }
 
 
-std::tuple<glm::vec3, glm::vec3> transform_coordinate_space(glm::vec3 normal)
+std::tuple<vecmath::vec3, vecmath::vec3> transform_coordinate_space(vecmath::vec3 normal)
 {
-	glm::vec3 perp_to_normal;
-	glm::vec3 perp_to_both;
+	vecmath::vec3 perp_to_normal;
+	vecmath::vec3 perp_to_both;
 	if(std::fabs(normal.x) > std::fabs(normal.y))
 	{
-		perp_to_normal = glm::vec3(normal.z, 0, -normal.x) / sqrtf(normal.x * normal.x + normal.z * normal.z);
+		perp_to_normal = vecmath::vec3(normal.z, 0, -normal.x) / sqrtf(normal.x * normal.x + normal.z * normal.z);
 	}
 
 	else
 	{
-		perp_to_normal = glm::vec3(0, -normal.z, normal.y) / sqrtf(normal.y * normal.y + normal.z * normal.z);
+		perp_to_normal = vecmath::vec3(0, -normal.z, normal.y) / sqrtf(normal.y * normal.y + normal.z * normal.z);
 	}
 
-	perp_to_both = glm::cross(normal, perp_to_normal);
+	perp_to_both = vecmath::cross(normal, perp_to_normal);
 
 	return {perp_to_normal, perp_to_both};
 }
@@ -180,11 +180,11 @@ bool intersection_occurs(Ray ray, SphereCollider collider)
 
 bool triangle_intersection_occurs(Ray ray, Triangle triangle, float &t, float &u, float &v)
 {
-	glm::vec3 v0v1 = triangle.v1 - triangle.v0;
-	glm::vec3 v0v2 = triangle.v2 - triangle.v0;
-	glm::vec3 v1v2 = triangle.v2 - triangle.v1;
-	glm::vec3 p	   = glm::cross(ray.direction, v0v2);
-	float d		   = glm::dot(v0v1, p);
+	vecmath::vec3 v0v1 = triangle.v1 - triangle.v0;
+	vecmath::vec3 v0v2 = triangle.v2 - triangle.v0;
+	vecmath::vec3 v1v2 = triangle.v2 - triangle.v1;
+	vecmath::vec3 p	   = vecmath::cross(ray.direction, v0v2);
+	float d			   = vecmath::dot(v0v1, p);
 
 	// ray parallel to triangle
 	if(fabs(d) < 0.00001f)
@@ -194,33 +194,33 @@ bool triangle_intersection_occurs(Ray ray, Triangle triangle, float &t, float &u
 
 	float inverse = 1.0f / d;
 
-	glm::vec3 t_vector = ray.position - triangle.v0;
-	u				   = inverse * glm::dot(-t_vector, p);
+	vecmath::vec3 t_vector = ray.position - triangle.v0;
+	u					   = inverse * vecmath::dot(-t_vector, p);
 	if(u < 0 || u > 1)
 	{
 		return false;
 	}
 
-	glm::vec3 q = glm::cross(t_vector, v0v1);
-	v			= glm::dot(ray.direction, q) * inverse;
+	vecmath::vec3 q = vecmath::cross(t_vector, v0v1);
+	v				= vecmath::dot(ray.direction, q) * inverse;
 	if(v < 0 || u + v > 1)
 	{
 		return false;
 	}
 
-	t = glm::dot(v0v2, q) * inverse;
+	t = vecmath::dot(v0v2, q) * inverse;
 	return true;
 }
 
 
-glm::vec3 scattering_phase_function(glm::vec3 direction, float scattering)
+vecmath::vec3 scattering_phase_function(vecmath::vec3 direction, float scattering)
 {
 	// keep it scattering in same general direction
 	float x = -1.0f + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (1 + 1));
 	float y = -1.0f + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (1 + 1));
 	float z = -1.0f + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (1 + 1));
 
-	return glm::vec3(direction.x + x * scattering, direction.y + y * scattering, direction.z + z * scattering);
+	return vecmath::vec3(direction.x + x * scattering, direction.y + y * scattering, direction.z + z * scattering);
 }
 
 

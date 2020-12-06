@@ -3,11 +3,10 @@
 
 #include <iostream>
 
-#include "glm/glm.hpp"
-#include "glm/gtx/string_cast.hpp"
 
 #include "SphereCollider.h"
 #include "material.h"
+#include "vec3.h"
 
 struct Sphere
 {
@@ -16,7 +15,7 @@ struct Sphere
 
 	void to_string()
 	{
-		std::cout << "Position: " << glm::to_string(collider.position) << std::endl
+		std::cout << "Position: " << vecmath::to_string(collider.position) << std::endl
 				  << "radius: " << collider.radius << std::endl;
 		material.to_string();
 	}
@@ -25,9 +24,9 @@ struct Sphere
 
 struct Triangle
 {
-	glm::vec3 v0;
-	glm::vec3 v1;
-	glm::vec3 v2;
+	vecmath::vec3 v0;
+	vecmath::vec3 v1;
+	vecmath::vec3 v2;
 
 	Material material;
 };

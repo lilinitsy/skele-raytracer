@@ -1,17 +1,22 @@
-CXX=clang++ -fopenmp -lSDL2
-CXXFLAGS=-g -std=c++11 -fopenmp -Wall -I/usr/include/SDL2/
+CUDA_PATH     ?= /usr/local/cuda
+HOST_COMPILER  = g++
+NVCC           = $(CUDA_PATH)/bin/nvcc -ccbin $(HOST_COMPILER)
 
+# select one of these for Debug vs. Release
+#NVCC_DBG       = -g -G
+NVCC_DBG       =
 
-all: raytracer
+NVCCFLAGS      = $(NVCC_DBG) -m64
+GENCODE_FLAGS  = -gencode arch=compute_60,code=sm_60
+
+SRCS = main.cu
+INCS = *.h
+
+raytracer: raytracer.o
+	$(NVCC) $(NVCCFLAGS) $(GENCODE_FLAGS) -o raytracer raytracer.o
+
+raytracer.o: $(SRCS) $(INCS)
+	$(NVCC) $(NVCCFLAGS) $(GENCODE_FLAGS) -o raytracer.o -c main.cu
+
 clean:
-	rm -f *.o *.h.gch raytracer
-test: raytracer
-	./raytracer
-	display raytrace.bmp
-.PHONY: all clean test
-
-raytracer: main.o scene.o 
-	$(CXX) $(LDFLAGS) -o $(@) $(^)
-
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c -o $(@) $(<)
+	rm -f raytracer raytracer.o
