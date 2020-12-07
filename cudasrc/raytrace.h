@@ -133,10 +133,9 @@ vecmath::vec3 montecarlo_global_illumination(Ray ray, Scene scene, Sphere inters
 	return total_colour;
 }
 
-__global__ void testfunc()
-{
-	
-}
+
+
+
 
 vecmath::vec3 shade(Ray ray, Scene scene, int depth, bool monte_carlo, short num_path_traces)
 {

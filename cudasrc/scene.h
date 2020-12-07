@@ -12,7 +12,8 @@
 
 struct Scene
 {
-	int width = 1920, height = 1080; // used for res
+	int width = 1920;
+	int height = 1080;
 	std::vector<Sphere> spheres;
 	std::vector<vecmath::vec3> vertices;
 	std::vector<Triangle> triangles;
@@ -25,6 +26,25 @@ struct Scene
 	vecmath::vec3 background;
 	int maxDepth	 = 1;
 	bool use_shadows = false;
+
+	size_t size()
+	{
+		size_t size = 0;
+		size += 2 * sizeof(int); // width, height
+		size += spheres.size() * sizeof(Sphere);
+		size += vertices.size() * sizeof(vecmath::vec3);
+		size += triangles.size() * sizeof(Triangle);
+		size += point_lights.size() * sizeof(PointLight);
+		size += directional_lights.size() * sizeof(DirectionalLight);
+		size += sizeof(AmbientLight);
+		size += sizeof(Camera);
+		size += spherical_fog.size() * sizeof(SphericalFog);
+		size += sizeof(vecmath::vec3); // background
+		size += sizeof(int); // maxdepth;
+		size += sizeof(bool); // use_shadows
+
+		return size;
+	}
 };
 
 using std::string;
