@@ -161,7 +161,10 @@ std::tuple<vecmath::vec3, vecmath::vec3> transform_coordinate_space(vecmath::vec
 
 	perp_to_both = vecmath::cross(normal, perp_to_normal);
 
-	return {perp_to_normal, perp_to_both};
+
+	std::tuple<vecmath::vec3, vecmath::vec3> transformed_coordinate_spaces = std::make_tuple(perp_to_normal, perp_to_both);
+
+	return transformed_coordinate_spaces;
 }
 
 
