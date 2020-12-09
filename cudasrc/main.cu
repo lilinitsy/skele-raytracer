@@ -33,7 +33,10 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 	// This was the cpu code:
 	float u = (2 * ((x + 0.5) * inv_width) - 1) * angle * aspect_ratio;
 	float v = (1 - 2 * ((y + 0.5) * inv_height)) * angle;
+	//float u = (float) x / (float) scene.width;
+	//float v = (float) y / (float) scene.height;
 
+	// Check that ray_dir calculation is correct	
 	vecmath::vec3 ray_dir(scene.camera.direction + u * scene.camera.right + v * scene.camera.up);
 	vecmath::normalize(ray_dir);
 
@@ -51,7 +54,9 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 
 	//image[pixel] = vecmath::vec3((float) x / scene.width, (float) y / scene.height, 0.1f);
 	//image[pixel] = scene.spheres[1].collider.position;
-	image[pixel] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces, random_state);
+	image[pixel] = ray.direction;
+	//image[pixel] = vecmath::vec3(v, v, v);
+	//image[pixel] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces, random_state);
 }
 
 
@@ -113,7 +118,11 @@ void generate_rays(Scene scene, Options option, char *output)
 		for(int j = 0; j < scene.width; j++)
 		{
 			int index = i * scene.width + j;
-			//printf("pixel[%d]: %f %f %f\n", index, image_host[index].x, image_host[index].y, image_host[index].z);
+
+
+			printf("pixel[%d]: %f %f %f\n", index, image_host[index].x, image_host[index].y, image_host[index].z);
+		
+
 			ofs << (unsigned char) (std::min(float(1), image_host[index].x) * 255) << (unsigned char) (std::min(float(1), image_host[index].y) * 255) << (unsigned char) (std::min(float(1), image_host[index].z) * 255);
 		}
 	}

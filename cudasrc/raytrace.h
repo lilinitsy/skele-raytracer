@@ -166,6 +166,7 @@ __device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_c
 		}
 	}
 
+
 	// Check if a triangle intersection occurs, and if it does,
 	// get the distance and parse that and the intersected object
 	Triangle intersected_triangle;
