@@ -6,11 +6,13 @@ NVCC           = $(CUDA_PATH)/bin/nvcc -ccbin $(HOST_COMPILER)
 #NVCC_DBG       = -g -G
 NVCC_DBG       =
 
-NVCCFLAGS      = $(NVCC_DBG) -m64 -dc -std=c++11 --expt-relaxed-constexpr
+NVCCFLAGS      = $(NVCC_DBG) -m64 -std=c++11 --expt-relaxed-constexpr
 GENCODE_FLAGS  = -gencode arch=compute_60,code=sm_60
 
 SRCS = main.cu
 INCS = *.h
+
+all: raytracer
 
 raytracer: raytracer.o
 	$(NVCC) $(NVCCFLAGS) $(GENCODE_FLAGS) -o raytracer raytracer.o

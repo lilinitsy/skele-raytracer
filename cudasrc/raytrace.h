@@ -14,8 +14,8 @@
 #include "vec3.h"
 
 __device__ vecmath::vec3 uniform_sample_hemi(float r1, float r2);
-__device__ vecmath::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_sphere, int depth);
-__device__ vecmath::vec3 shade(Ray ray, CudaScene **scene, int depth, bool monte_carlo, short num_path_traces);
+__device__ vecmath::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_sphere, int depth, curandState *random_state);
+__device__ vecmath::vec3 shade(Ray ray, CudaScene **scene, int depth, bool monte_carlo, short num_path_traces, curandState *random_state);
 
 
 __device__ vecmath::vec3 uniform_sample_hemi(float r1, float r2)
@@ -64,7 +64,7 @@ __device__ vecmath::vec3 direct_illumination(Ray ray, CudaScene **scene, Sphere 
 				refracted_ray.direction = refraction_ray_direction;
 
 				// Recursively call the shade function using the refracted ray, with one fewer depth
-				refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces);
+				refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces, random_state);
 			}
 
 			// Add in the reflection colour recursively
@@ -72,7 +72,7 @@ __device__ vecmath::vec3 direct_illumination(Ray ray, CudaScene **scene, Sphere 
 			Ray reflected_ray;
 			reflected_ray.position	= intersection_point;
 			reflected_ray.direction = reflected_ray_direction;
-			reflection_colour += (1 - fr) * intersected_sphere.material.specular * shade(reflected_ray, scene, depth - 1, monte_carlo, num_path_traces);
+			reflection_colour += (1 - fr) * intersected_sphere.material.specular * shade(reflected_ray, scene, depth - 1, monte_carlo, num_path_traces, random_state);
 		}
 
 		// This does the same code for every directional light; obviously this could've been vastly modularized
@@ -87,14 +87,14 @@ __device__ vecmath::vec3 direct_illumination(Ray ray, CudaScene **scene, Sphere 
 				refracted_ray.position	= intersection_point;
 				refracted_ray.direction = refraction_ray_direction;
 
-				refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces);
+				refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces, random_state);
 			}
 
 			vecmath::vec3 reflected_ray_direction = bp::reflect_direction(light_direction, intersection_point_normal);
 			Ray reflected_ray;
 			reflected_ray.position	= intersection_point;
 			reflected_ray.direction = reflected_ray_direction;
-			reflection_colour += (1 - fr) * intersected_sphere.material.specular * shade(reflected_ray, scene, depth - 1, monte_carlo, num_path_traces);
+			reflection_colour += (1 - fr) * intersected_sphere.material.specular * shade(reflected_ray, scene, depth - 1, monte_carlo, num_path_traces, random_state);
 		}
 	}
 
@@ -126,7 +126,7 @@ __device__ vecmath::vec3 montecarlo_global_illumination(Ray ray, CudaScene **sce
 		Ray indirect_ray;
 		indirect_ray.position  = intersection_point + 0.00001f;
 		indirect_ray.direction = sample_world_space;
-		total_colour += (r1 * shade(indirect_ray, scene, depth - 1, true, num_rays)) / probability_dist;
+		total_colour += (r1 * shade(indirect_ray, scene, depth - 1, true, num_rays, random_state)) / probability_dist;
 	}
 
 	total_colour /= num_rays;
@@ -224,7 +224,7 @@ __device__ vecmath::vec3 shade(Ray ray, CudaScene **scene, int depth, bool monte
 	{
 	}
 
-	return vecmath::vec3(0.0f, 0.0f, 0.0f);
+	return vecmath::vec3(1.0f, 0.0f, 0.0f);
 }
 
 #endif
