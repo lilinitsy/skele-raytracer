@@ -13,12 +13,12 @@
 #include "utils.h"
 #include "vec3.h"
 
-vecmath::vec3 uniform_sample_hemi(float r1, float r2);
-vecmath::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_sphere, int depth);
-vecmath::vec3 shade(Ray ray, Scene scene, int depth, bool monte_carlo, short num_path_traces);
+__device__ vecmath::vec3 uniform_sample_hemi(float r1, float r2);
+__device__ vecmath::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_sphere, int depth);
+__device__ vecmath::vec3 shade(Ray ray, CudaScene **scene, int depth, bool monte_carlo, short num_path_traces);
 
 
-vecmath::vec3 uniform_sample_hemi(float r1, float r2)
+__device__ vecmath::vec3 uniform_sample_hemi(float r1, float r2)
 {
 	float s_theta = sqrtf(1 - powf(r1, 2.0f));
 	float phi	  = 2.0f * M_PI * r2;
@@ -32,7 +32,7 @@ vecmath::vec3 uniform_sample_hemi(float r1, float r2)
 
 
 
-vecmath::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_sphere, vecmath::vec3 intersection_point, vecmath::vec3 intersection_point_normal, int depth, bool monte_carlo, short num_path_traces)
+__device__ vecmath::vec3 direct_illumination(Ray ray, CudaScene **scene, Sphere intersected_sphere, vecmath::vec3 intersection_point, vecmath::vec3 intersection_point_normal, int depth, bool monte_carlo, short num_path_traces, curandState *random_state)
 {
 	// Iteratively add the ambient, diffuse, and specular components to the total colour
 	vecmath::vec3 total_colour = vecmath::vec3(0.0f, 0.0f, 0.0f);
@@ -50,9 +50,9 @@ vecmath::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_spher
 	if(intersected_sphere.material.specular != vecmath::vec3(0.0f, 0.0f, 0.0f) && depth > 0)
 	{
 		// This does it for every point light
-		for(unsigned int i = 0; i < scene.point_lights.size(); i++)
+		for(unsigned int i = 0; i < (*scene)->num_pointlights; i++)
 		{
-			vecmath::vec3 light_direction = vecmath::normalize(scene.point_lights[i].position - intersection_point);
+			vecmath::vec3 light_direction = vecmath::normalize((*scene)->point_lights[i].position - intersection_point);
 
 			// If the fresnel value is under 1, then there is refraction occurring as the light passes through
 			if(fr < 1)
@@ -76,9 +76,9 @@ vecmath::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_spher
 		}
 
 		// This does the same code for every directional light; obviously this could've been vastly modularized
-		for(unsigned int i = 0; i < scene.directional_lights.size(); i++)
+		for(unsigned int i = 0; i < (*scene)->num_directionallights; i++)
 		{
-			vecmath::vec3 light_direction = vecmath::normalize(scene.directional_lights[i].direction);
+			vecmath::vec3 light_direction = vecmath::normalize((*scene)->directional_lights[i].direction);
 
 			if(fr < 1)
 			{
@@ -102,20 +102,21 @@ vecmath::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_spher
 }
 
 
-vecmath::vec3 montecarlo_global_illumination(Ray ray, Scene scene, Sphere intersected_sphere, vecmath::vec3 intersection_point, vecmath::vec3 intersection_point_normal, int depth, int num_rays)
+__device__ vecmath::vec3 montecarlo_global_illumination(Ray ray, CudaScene **scene, Sphere intersected_sphere, vecmath::vec3 intersection_point, vecmath::vec3 intersection_point_normal, int depth, int num_rays, curandState *random_state)
 {
 	vecmath::vec3 total_colour = vecmath::vec3(0.0f, 0.0f, 0.0f);
 
-	std::tuple<vecmath::vec3, vecmath::vec3> tmp = transform_coordinate_space(intersection_point_normal);
-	vecmath::vec3 perp_to_normal				 = std::get<0>(tmp);
-	vecmath::vec3 perp_to_both					 = std::get<1>(tmp);
+	// Getting portions of tuples requires the --expt-relaxed-constexpr flag
+	TupleOfVec3 tmp = transform_coordinate_space(intersection_point_normal);
+	vecmath::vec3 perp_to_normal				 = tmp.first;
+	vecmath::vec3 perp_to_both					 = tmp.second;
 
 	float probability_dist = 1 / (M_PI);
 
 	for(int i = 0; i < num_rays; i++)
 	{
-		float r1 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-		float r2 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+		float r1 = curand_uniform(random_state);
+		float r2 = curand_uniform(random_state);
 
 		vecmath::vec3 sample = uniform_sample_hemi(r1, r2);
 		vecmath::vec3 sample_world_space(sample.x * perp_to_both.x + sample.y * intersection_point_normal.x + sample.z * perp_to_normal.x,
@@ -137,7 +138,7 @@ vecmath::vec3 montecarlo_global_illumination(Ray ray, Scene scene, Sphere inters
 
 
 
-vecmath::vec3 shade(Ray ray, Scene scene, int depth, bool monte_carlo, short num_path_traces)
+__device__ vecmath::vec3 shade(Ray ray, CudaScene **scene, int depth, bool monte_carlo, short num_path_traces, curandState *random_state)
 {
 	// Base case: No more reflections to calculate (for the depth provided)
 	if(depth <= 0)
@@ -150,17 +151,17 @@ vecmath::vec3 shade(Ray ray, Scene scene, int depth, bool monte_carlo, short num
 	float min_distance = INFINITY;
 	Sphere intersected_sphere;
 	bool hit_a_sphere = false;
-	for(unsigned int i = 0; i < scene.spheres.size(); i++)
+	for(unsigned int i = 0; i < (*scene)->num_spheres; i++)
 	{
-		if(intersection_occurs(ray, scene.spheres[i].collider))
+		if(intersection_occurs(ray, (*scene)->spheres[i].collider))
 		{
 			hit_a_sphere   = true;
-			float distance = collision_distance(ray, scene.spheres[i].collider);
+			float distance = collision_distance(ray, (*scene)->spheres[i].collider);
 
 			if(distance < min_distance)
 			{
 				min_distance	   = distance;
-				intersected_sphere = scene.spheres[i];
+				intersected_sphere = (*scene)->spheres[i];
 			}
 		}
 	}
@@ -169,19 +170,19 @@ vecmath::vec3 shade(Ray ray, Scene scene, int depth, bool monte_carlo, short num
 	// get the distance and parse that and the intersected object
 	Triangle intersected_triangle;
 	bool hit_a_triangle = false;
-	for(unsigned int i = 0; i < scene.triangles.size(); i++)
+	for(unsigned int i = 0; i < (*scene)->num_triangles; i++)
 	{
 		float t;
 		float u;
 		float v;
-		if(triangle_intersection_occurs(ray, scene.triangles[i], t, u, v))
+		if(triangle_intersection_occurs(ray, (*scene)->triangles[i], t, u, v))
 		{
 			if(t < min_distance)
 			{
 				min_distance		 = t;
 				hit_a_sphere		 = false;
 				hit_a_triangle		 = true;
-				intersected_triangle = scene.triangles[i];
+				intersected_triangle = (*scene)->triangles[i];
 			}
 		}
 	}
@@ -189,7 +190,7 @@ vecmath::vec3 shade(Ray ray, Scene scene, int depth, bool monte_carlo, short num
 	// If no sphere was hit, then the background was hit, so return that colour
 	if(!hit_a_sphere && !hit_a_triangle)
 	{
-		return scene.background;
+		return (*scene)->background;
 	}
 
 	if(hit_a_sphere)
@@ -206,15 +207,15 @@ vecmath::vec3 shade(Ray ray, Scene scene, int depth, bool monte_carlo, short num
 		vecmath::vec3 intersection_point_normal = vecmath::normalize(intersection_point - intersected_sphere.collider.position);
 
 		// Get the direct illumination value; this is light that shines from light sources rather than the global illumination implementation
-		vecmath::vec3 direct_colour = direct_illumination(ray, scene, intersected_sphere, intersection_point, intersection_point_normal, depth, monte_carlo, num_path_traces);
+		vecmath::vec3 direct_colour = direct_illumination(ray, scene, intersected_sphere, intersection_point, intersection_point_normal, depth, monte_carlo, num_path_traces, random_state);
 
-		if(monte_carlo)
+		/*if(monte_carlo)
 		{
 			vecmath::vec3 indirect_colour = montecarlo_global_illumination(ray, scene, intersected_sphere, intersection_point, intersection_point_normal, depth, num_path_traces);
 			vecmath::vec3 total_colour	  = (direct_colour / (float) M_PI + 2.0f * indirect_colour) * intersected_sphere.material.diffuse;
 
 			return total_colour;
-		}
+		}*/
 
 		return direct_colour;
 	}

@@ -3,7 +3,9 @@
 
 #include <algorithm>
 #include <cmath>
-#include <tuple>
+
+#include <curand_kernel.h>
+
 
 #include "SphereCollider.h"
 #include "lights.h"
@@ -11,17 +13,6 @@
 #include "scene.h"
 #include "shapes.h"
 #include "vec3.h"
-
-float euclidean_distance(int x, int y);
-float smallest_root(float a, float b, float c);
-float collision_distance(Ray ray, SphereCollider collider);
-float intensity_of(PointLight light);
-float clamp(float a, float b, float input);
-std::tuple<vecmath::vec3, vecmath::vec3> transform_coordinate_space(vecmath::vec3 normal);
-bool intersection_occurs(Ray ray, SphereCollider collider);
-bool shadow(Scene scene, vecmath::vec3 intersection_point, PointLight point_light);
-bool shadow(Scene scene, vecmath::vec3 intersection_point, DirectionalLight directional_light);
-
 
 struct Options
 {
@@ -39,16 +30,34 @@ struct Options
 };
 
 
-bool shadow(Scene scene, vecmath::vec3 intersection_point, PointLight point_light)
+struct TupleOfVec3
+{
+	vecmath::vec3 first;
+	vecmath::vec3 second;
+};
+
+
+__device__ float euclidean_distance(int x, int y);
+__device__ float smallest_root(float a, float b, float c);
+__device__ float collision_distance(Ray ray, SphereCollider collider);
+__device__ float intensity_of(PointLight light);
+__device__ float clamp(float a, float b, float input);
+__device__ TupleOfVec3 transform_coordinate_space(vecmath::vec3 normal);
+__device__ bool intersection_occurs(Ray ray, SphereCollider collider);
+__device__ bool shadow(CudaScene **scene, vecmath::vec3 intersection_point, PointLight point_light);
+__device__ bool shadow(CudaScene **scene, vecmath::vec3 intersection_point, DirectionalLight directional_light);
+
+
+__device__ bool shadow(CudaScene **scene, vecmath::vec3 intersection_point, PointLight point_light)
 {
 	vecmath::vec3 direction = vecmath::normalize(point_light.position - intersection_point);
 	Ray ray;
 	ray.position  = intersection_point + 0.000001f;
 	ray.direction = direction;
 
-	for(unsigned int i = 0; i < scene.spheres.size(); i++)
+	for(unsigned int i = 0; i < (*scene)->num_spheres; i++)
 	{
-		if(intersection_occurs(ray, scene.spheres[i].collider))
+		if(intersection_occurs(ray, (*scene)->spheres[i].collider))
 		{
 			return true;
 		}
@@ -57,16 +66,16 @@ bool shadow(Scene scene, vecmath::vec3 intersection_point, PointLight point_ligh
 	return false;
 }
 
-bool shadow(Scene scene, vecmath::vec3 intersection_point, DirectionalLight directional_light)
+__device__ bool shadow(CudaScene **scene, vecmath::vec3 intersection_point, DirectionalLight directional_light)
 {
 	vecmath::vec3 direction = vecmath::normalize(directional_light.direction);
 	Ray ray;
 	ray.position  = intersection_point + 0.000001f;
 	ray.direction = direction;
 
-	for(unsigned int i = 0; i < scene.spheres.size(); i++)
+	for(unsigned int i = 0; i < (*scene)->num_spheres; i++)
 	{
-		if(intersection_occurs(ray, scene.spheres[i].collider))
+		if(intersection_occurs(ray, (*scene)->spheres[i].collider))
 		{
 			return true;
 		}
@@ -75,7 +84,7 @@ bool shadow(Scene scene, vecmath::vec3 intersection_point, DirectionalLight dire
 	return false;
 }
 
-float euclidean_distance(int x, int y)
+__device__ float euclidean_distance(int x, int y)
 {
 	if(x == 0 && y == 0)
 	{
@@ -84,7 +93,7 @@ float euclidean_distance(int x, int y)
 	return sqrtf(x * x + y * y);
 }
 
-float smallest_root(float a, float b, float c)
+__device__ float smallest_root(float a, float b, float c)
 {
 	float discriminant = b * b - 4 * a * c;
 
@@ -110,7 +119,7 @@ float smallest_root(float a, float b, float c)
 }
 
 
-float collision_distance(Ray ray, SphereCollider collider)
+__device__ float collision_distance(Ray ray, SphereCollider collider)
 {
 	vecmath::vec3 e_c = ray.position - collider.position;
 	float a			  = vecmath::dot(ray.direction, ray.direction);
@@ -122,14 +131,14 @@ float collision_distance(Ray ray, SphereCollider collider)
 
 
 
-float intensity_of(PointLight light)
+__device__ float intensity_of(PointLight light)
 {
 	float intensity = 0.30f * light.colour.x + 0.59f * light.colour.y + 0.11f * light.colour.z;
 	return intensity;
 }
 
 
-float clamp(float a, float b, float input)
+__device__ float clamp(float a, float b, float input)
 {
 	if(input < a)
 	{
@@ -145,7 +154,7 @@ float clamp(float a, float b, float input)
 }
 
 
-std::tuple<vecmath::vec3, vecmath::vec3> transform_coordinate_space(vecmath::vec3 normal)
+__device__ TupleOfVec3 transform_coordinate_space(vecmath::vec3 normal)
 {
 	vecmath::vec3 perp_to_normal;
 	vecmath::vec3 perp_to_both;
@@ -162,14 +171,16 @@ std::tuple<vecmath::vec3, vecmath::vec3> transform_coordinate_space(vecmath::vec
 	perp_to_both = vecmath::cross(normal, perp_to_normal);
 
 
-	std::tuple<vecmath::vec3, vecmath::vec3> transformed_coordinate_spaces = std::make_tuple(perp_to_normal, perp_to_both);
+	TupleOfVec3 transformed_coordinate_spaces;
+	transformed_coordinate_spaces.first = perp_to_normal;
+	transformed_coordinate_spaces.second = perp_to_both;
 
 	return transformed_coordinate_spaces;
 }
 
 
 
-bool intersection_occurs(Ray ray, SphereCollider collider)
+__device__ bool intersection_occurs(Ray ray, SphereCollider collider)
 {
 	float distance = collision_distance(ray, collider);
 
@@ -181,7 +192,7 @@ bool intersection_occurs(Ray ray, SphereCollider collider)
 	return true;
 }
 
-bool triangle_intersection_occurs(Ray ray, Triangle triangle, float &t, float &u, float &v)
+__device__ bool triangle_intersection_occurs(Ray ray, Triangle triangle, float &t, float &u, float &v)
 {
 	vecmath::vec3 v0v1 = triangle.v1 - triangle.v0;
 	vecmath::vec3 v0v2 = triangle.v2 - triangle.v0;
@@ -215,16 +226,18 @@ bool triangle_intersection_occurs(Ray ray, Triangle triangle, float &t, float &u
 	return true;
 }
 
-
-vecmath::vec3 scattering_phase_function(vecmath::vec3 direction, float scattering)
+__device__ float maxf(float f1, float f2)
 {
-	// keep it scattering in same general direction
-	float x = -1.0f + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (1 + 1));
-	float y = -1.0f + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (1 + 1));
-	float z = -1.0f + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (1 + 1));
-
-	return vecmath::vec3(direction.x + x * scattering, direction.y + y * scattering, direction.z + z * scattering);
+	return f1 > f2 ? f1 : f2;
 }
+
+__device__ void swapf(float &f1, float &f2)
+{
+	float tmp = f1;
+	f1 = f2;
+	f2 = tmp;
+}
+
 
 
 #endif

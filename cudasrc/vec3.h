@@ -196,8 +196,8 @@ namespace vecmath
 		return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ")";
 	}
 
-	
 
-} // namespace vec3
+
+} // namespace vecmath
 
 #endif
