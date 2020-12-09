@@ -141,10 +141,10 @@ __device__ vecmath::vec3 montecarlo_global_illumination(Ray ray, CudaScene scene
 __device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_carlo, short num_path_traces, curandState *random_state)
 {
 	// Base case: No more reflections to calculate (for the depth provided)
-	if(depth <= 0)
+	/*if(depth <= 0)
 	{
 		return vecmath::vec3(0.0f, 0.0f, 0.0f);
-	}
+	}*/
 
 	// Check if a sphere intersection occurs and if it does,
 	// get the distance and parse that and the intersected object

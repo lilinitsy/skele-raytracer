@@ -18,8 +18,8 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 	int x = threadIdx.x + blockIdx.x * blockDim.x;
 	int y = threadIdx.y + blockIdx.y * blockDim.y;
 
-	float inv_width	 = 1.0f / scene.width;
-	float inv_height = 1.0f / scene.height;
+	float inv_width	 = 1.0f / (float) scene.width;
+	float inv_height = 1.0f / (float) scene.height;
 
 	float aspect_ratio = (float) scene.width / (float) scene.height;
 	float angle		   = tan(M_PI * 0.5 * option.fov / 180.0f);
@@ -33,8 +33,7 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 	// This was the cpu code:
 	float u = (2 * ((x + 0.5) * inv_width) - 1) * angle * aspect_ratio;
 	float v = (1 - 2 * ((y + 0.5) * inv_height)) * angle;
-	//float u = (float) x / (float) scene.width;
-	//float v = (float) y / (float) scene.height;
+	v -= 1.0f;
 
 	// Check that ray_dir calculation is correct	
 	vecmath::vec3 ray_dir(scene.camera.direction + u * scene.camera.right + v * scene.camera.up);
@@ -54,9 +53,9 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 
 	//image[pixel] = vecmath::vec3((float) x / scene.width, (float) y / scene.height, 0.1f);
 	//image[pixel] = scene.spheres[1].collider.position;
-	image[pixel] = ray.direction;
+	//image[pixel] = ray.direction;
 	//image[pixel] = vecmath::vec3(v, v, v);
-	//image[pixel] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces, random_state);
+	image[pixel] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces, random_state);
 }
 
 
@@ -130,6 +129,7 @@ void generate_rays(Scene scene, Options option, char *output)
 	printf("***\nWROTE TO PPM\n***\n");
 
 	cudaFree(image);
+	printf("max depth: %d\n", option.max_depth);
 	// make sure to free up the scene
 }
 
