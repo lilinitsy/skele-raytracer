@@ -18,6 +18,8 @@ void generate_rays(Scene scene, Options option, char *output);
 
 void generate_rays_parallel(Scene scene, Options option, char *output)
 {
+	option.max_depth = 1;
+	option.grid_size = 0;
 	glm::vec3 **image = new glm::vec3 *[scene.height];
 
 	for(int i = 0; i < scene.height; i++)
@@ -37,6 +39,7 @@ void generate_rays_parallel(Scene scene, Options option, char *output)
 			float inv_height   = 1 / float(scene.height);
 			float aspect_ratio = scene.width / float(scene.height);
 			float angle		   = tan(M_PI * 0.5 * option.fov / 180.);
+			int index = y * scene.width + x;
 
 			if(option.grid_size > 0)
 			{
@@ -50,6 +53,8 @@ void generate_rays_parallel(Scene scene, Options option, char *output)
 
 						glm::vec3 ray_dir(scene.camera.direction + u * scene.camera.right + v * scene.camera.up);
 						glm::normalize(ray_dir);
+
+						printf("ray: %f %f %f\n", index, ray_dir.x, ray_dir.y, ray_dir.z);
 
 						Ray ray;
 						ray.position  = scene.camera.position;
@@ -73,6 +78,8 @@ void generate_rays_parallel(Scene scene, Options option, char *output)
 				Ray ray;
 				ray.position  = scene.camera.position;
 				ray.direction = ray_dir;
+
+				printf("ray_dir[%d]: %f %f %f\n", index, ray.direction.x, ray.direction.y, ray.direction.z);
 
 				image[y][x] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces);
 			}
