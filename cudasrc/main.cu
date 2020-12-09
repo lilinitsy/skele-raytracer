@@ -25,7 +25,7 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 	float angle		   = tan(M_PI * 0.5 * option.fov / 180.0f);
 
 
-	if(x >= 1920 || y >= 1080)
+	if(x >= scene.width || y >= scene.height)
 	{
 		return;
 	}
@@ -119,7 +119,7 @@ void generate_rays(Scene scene, Options option, char *output)
 			int index = i * scene.width + j;
 
 
-			printf("pixel[%d]: %f %f %f\n", index, image_host[index].x, image_host[index].y, image_host[index].z);
+			//printf("pixel[%d]: %f %f %f\n", index, image_host[index].x, image_host[index].y, image_host[index].z);
 		
 
 			ofs << (unsigned char) (std::min(float(1), image_host[index].x) * 255) << (unsigned char) (std::min(float(1), image_host[index].y) * 255) << (unsigned char) (std::min(float(1), image_host[index].z) * 255);

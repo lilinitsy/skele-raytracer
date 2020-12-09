@@ -140,11 +140,69 @@ __device__ vecmath::vec3 montecarlo_global_illumination(Ray ray, CudaScene scene
 
 __device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_carlo, short num_path_traces, curandState *random_state)
 {
+
+	float min_distance = INFINITY;
+	Sphere intersected_sphere;
+	bool hit_a_sphere = false;
+	for(unsigned int i = 0; i < scene.num_spheres; i++)
+	{
+		if(intersection_occurs(ray, scene.spheres[i].collider))
+		{
+			hit_a_sphere   = true;
+			float distance = collision_distance(ray, scene.spheres[i].collider);
+
+			if(distance < min_distance)
+			{
+				min_distance	   = distance;
+				intersected_sphere = scene.spheres[i];
+			}
+		}
+	}
+
+	Triangle intersected_triangle;
+	bool hit_a_triangle = false;
+
+	for(unsigned int i = 0; i < scene.num_triangles; i++)
+	{
+		float t;
+		float u;
+		float v;
+		if(triangle_intersection_occurs(ray, scene.triangles[i], t, u, v))
+		{
+			if(t < min_distance)
+			{
+				min_distance		 = t;
+				hit_a_sphere		 = false;
+				hit_a_triangle		 = true;
+				intersected_triangle = scene.triangles[i];
+			}
+		}
+	}
+
+	// If no sphere was hit, then the background was hit, so return that colour
+	if(!hit_a_sphere && !hit_a_triangle)
+	{
+		return scene.background;
+	}
+
+	if(hit_a_sphere)
+	{
+		return vecmath::vec3(1.0f, 1.0f, 1.0f);
+	}
+
+	if(hit_a_triangle)
+	{
+		return vecmath::vec3(0.0f, 0.5f, 0.3f);
+	}
+
+	return vecmath::vec3(0.1f, 0.8f, 0.8f);
+
+	/*
 	// Base case: No more reflections to calculate (for the depth provided)
-	/*if(depth <= 0)
+	if(depth <= 0)
 	{
 		return vecmath::vec3(0.0f, 0.0f, 0.0f);
-	}*/
+	}
 
 	// Check if a sphere intersection occurs and if it does,
 	// get the distance and parse that and the intersected object
@@ -194,7 +252,7 @@ __device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_c
 	{
 		return scene.background;
 	}*/
-
+	/*
 	if(hit_a_sphere)
 	{
 		// This is just writing out the standard raytracing equations and solving for the smallest roots
@@ -218,7 +276,7 @@ __device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_c
 
 			return total_colour;
 		}*/
-
+/*
 		return direct_colour;
 	}
 
@@ -226,7 +284,7 @@ __device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_c
 	{
 	}
 
-	return vecmath::vec3(1.0f, 0.0f, 0.0f);
+	return vecmath::vec3(1.0f, 0.0f, 0.0f);*/
 }
 
 #endif
