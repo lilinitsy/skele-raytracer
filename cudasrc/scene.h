@@ -77,39 +77,64 @@ struct CudaScene
 	{
 	}
 
-	CudaScene(Scene *scene)
+	CudaScene(Scene scene)
 	{
-		width				  = scene->width;
-		height				  = scene->height;
-		num_spheres			  = scene->spheres.size();
-		num_vertices		  = scene->vertices.size();
-		num_triangles		  = scene->triangles.size();
-		num_pointlights		  = scene->point_lights.size();
-		num_directionallights = scene->directional_lights.size();
-		max_depth			  = scene->max_depth;
-		use_shadows			  = scene->use_shadows;
+		width				  = scene.width;
+		height				  = scene.height;
+		num_spheres			  = scene.spheres.size();
+		num_vertices		  = scene.vertices.size();
+		num_triangles		  = scene.triangles.size();
+		num_pointlights		  = scene.point_lights.size();
+		num_directionallights = scene.directional_lights.size();
+		max_depth			  = scene.max_depth;
+		use_shadows			  = scene.use_shadows;
 
-		spheres = new Sphere[num_spheres];
-		vertices = new vecmath::vec3[num_vertices];
-		triangles = new Triangle[num_triangles];
-		point_lights = new PointLight[num_pointlights];
+		spheres			   = new Sphere[num_spheres];
+		vertices		   = new vecmath::vec3[num_vertices];
+		triangles		   = new Triangle[num_triangles];
+		point_lights	   = new PointLight[num_pointlights];
 		directional_lights = new DirectionalLight[num_directionallights];
 
-		ambient_light = scene->ambient_light;
-		camera = scene->camera;
-		background = scene->background;
+		for(uint32_t i = 0; i < num_spheres; i++)
+		{
+			spheres[i] = scene.spheres[i];
+		}
+
+		for(uint32_t i = 0; i < num_vertices; i++)
+		{
+			vertices[i] = scene.vertices[i];
+		}
+
+		for(uint32_t i = 0; i < num_triangles; i++)
+		{
+			triangles[i] = scene.triangles[i];
+		}
+
+		for(uint32_t i = 0; i < num_pointlights; i++)
+		{
+			point_lights[i] = scene.point_lights[i];
+		}
+
+		for(uint32_t i = 0; i < num_directionallights; i++)
+		{
+			directional_lights[i] = scene.directional_lights[i];
+		}
+
+		ambient_light = scene.ambient_light;
+		camera		  = scene.camera;
+		background	  = scene.background;
 	}
 
 	size_t size()
 	{
 		size_t size = 0;
 		size += 9 * sizeof(int); // first 9 things
-		size += sizeof(bool); // use shadows
-		size += num_spheres * sizeof(Sphere*);
+		size += sizeof(bool);	 // use shadows
+		size += num_spheres * sizeof(Sphere);
 		size += num_vertices * sizeof(vecmath::vec3);
-		size += num_triangles * sizeof(Triangle*);
-		size += num_pointlights * sizeof(PointLight*);
-		size += num_directionallights * sizeof(DirectionalLight*);
+		size += num_triangles * sizeof(Triangle);
+		size += num_pointlights * sizeof(PointLight);
+		size += num_directionallights * sizeof(DirectionalLight);
 		size += sizeof(AmbientLight);
 		size += sizeof(Camera);
 		size += sizeof(vecmath::vec3); // background
@@ -119,13 +144,45 @@ struct CudaScene
 };
 
 
+CudaScene allocate_device_cudascene_struct(CudaScene scene)
+{
+	CudaScene device_scene = scene;
+
+	// Allocate cudascene pointers
+	cudaMalloc((void **) &device_scene.spheres, scene.num_spheres * sizeof(Sphere));
+	cudaMalloc((void **) &device_scene.vertices, scene.num_vertices * sizeof(vecmath::vec3));
+	cudaMalloc((void **) &device_scene.triangles, scene.num_triangles * sizeof(Triangle));
+	cudaMalloc((void **) &device_scene.point_lights, scene.num_pointlights * sizeof(PointLight));
+	cudaMalloc((void **) &device_scene.directional_lights, scene.num_directionallights * sizeof(DirectionalLight));
+
+
+	cudaMemcpy(device_scene.spheres, scene.spheres, scene.num_spheres * sizeof(Sphere), cudaMemcpyHostToDevice);
+	cudaMemcpy(device_scene.vertices, scene.vertices, scene.num_vertices * sizeof(vecmath::vec3), cudaMemcpyHostToDevice);
+	cudaMemcpy(device_scene.triangles, scene.triangles, scene.num_vertices * sizeof(Triangle), cudaMemcpyHostToDevice);
+	cudaMemcpy(device_scene.point_lights, scene.point_lights, scene.num_pointlights * sizeof(PointLight), cudaMemcpyHostToDevice);
+	cudaMemcpy(device_scene.directional_lights, scene.directional_lights, scene.num_directionallights * sizeof(DirectionalLight), cudaMemcpyHostToDevice);
+
+
+	device_scene.num_spheres		   = scene.num_spheres;
+	device_scene.num_vertices		   = scene.num_vertices;
+	device_scene.num_triangles		   = scene.num_triangles;
+	device_scene.num_pointlights	   = scene.num_pointlights;
+	device_scene.num_directionallights = scene.num_directionallights;
+	device_scene.ambient_light		   = scene.ambient_light;
+	device_scene.camera				   = scene.camera;
+	device_scene.background			   = scene.background;
+
+	return device_scene;
+}
+
+
 using std::string;
 
 
-Scene *parseScene(string fileName)
+Scene parseScene(string fileName)
 {
 	// open the file containing the scene description
-	Scene *scene = new Scene;
+	Scene scene;
 	;
 	Material mat;
 
@@ -167,7 +224,7 @@ Scene *parseScene(string fileName)
 			sphere.collider.radius	 = r;
 			sphere.material			 = mat;
 
-			scene->spheres.push_back(sphere);
+			scene.spheres.push_back(sphere);
 		}
 
 		else if(strcmp(command, "vertex") == 0)
@@ -175,7 +232,7 @@ Scene *parseScene(string fileName)
 			float x, y, z;
 			sscanf(line, "vertex %f %f %f", &x, &y, &z);
 			printf("Vertex at position (%f, %f, %f)\n", x, y, z);
-			scene->vertices.push_back(vecmath::vec3(x, y, z));
+			scene.vertices.push_back(vecmath::vec3(x, y, z));
 		}
 
 		else if(strcmp(command, "triangle") == 0)
@@ -183,16 +240,16 @@ Scene *parseScene(string fileName)
 			float v0, v1, v2;
 			sscanf(line, "triangle %f %f %f", &v0, &v1, &v2);
 			printf("Triangle with vertices (%f, %f, %f)\n", v0, v1, v2);
-			vecmath::vec3 first_vert  = scene->vertices[v0];
-			vecmath::vec3 second_vert = scene->vertices[v1];
-			vecmath::vec3 third_vert  = scene->vertices[v2];
+			vecmath::vec3 first_vert  = scene.vertices[v0];
+			vecmath::vec3 second_vert = scene.vertices[v1];
+			vecmath::vec3 third_vert  = scene.vertices[v2];
 
 			Triangle triangle;
 			triangle.v0		  = first_vert;
 			triangle.v1		  = second_vert;
 			triangle.v2		  = third_vert;
 			triangle.material = mat;
-			scene->triangles.push_back(triangle);
+			scene.triangles.push_back(triangle);
 		}
 
 		else if(strcmp(command, "camera") == 0)
@@ -205,21 +262,21 @@ Scene *parseScene(string fileName)
 			Camera cam = Camera(vecmath::vec3(posX, posY, posZ), vecmath::vec3(viewDirX, viewDirY, viewDirZ), vecmath::vec3(ux, uy, uz), halfHeightAngle);
 			vecmath::normalize(cam.direction);
 			vecmath::normalize(cam.up);
-			scene->camera = cam;
+			scene.camera = cam;
 
 			FILE *spheres1 = fopen("simplesphere.txt", "w");
 
 			fprintf(spheres1, "Up: (%f, %f, %f)\t Position: (%f, %f, %f)\n",
-					scene->camera.up.x, scene->camera.up.y, scene->camera.up.z,
-					scene->camera.position.x, scene->camera.position.y, scene->camera.position.z);
+					scene.camera.up.x, scene.camera.up.y, scene.camera.up.z,
+					scene.camera.position.x, scene.camera.position.y, scene.camera.position.z);
 
 			fclose(spheres1);
 		}
 
 		else if(strcmp(command, "film_resolution") == 0)
 		{
-			sscanf(line, "film_resolution %d %d", &scene->width, &scene->height);
-			printf("Film resolution: %d x %d\n", scene->width, scene->height);
+			sscanf(line, "film_resolution %d %d", &scene.width, &scene.height);
+			printf("Film resolution: %d x %d\n", scene.width, scene.height);
 		}
 
 		else if(strcmp(command, "background") == 0)
@@ -227,7 +284,7 @@ Scene *parseScene(string fileName)
 			float r, g, b;
 			sscanf(line, "background %f %f %f", &r, &g, &b);
 			printf("Background color of (%f,%f,%f)\n", r, g, b);
-			scene->background = vecmath::vec3(r, g, b);
+			scene.background = vecmath::vec3(r, g, b);
 		}
 
 		else if(strcmp(command, "material") == 0)
@@ -289,7 +346,7 @@ Scene *parseScene(string fileName)
 			printf("Point light colour (%f, %f, %f), located at (%f, %f, %f)\n",
 				   point_light.colour.x, point_light.colour.y, point_light.colour.z,
 				   point_light.position.x, point_light.position.y, point_light.position.z);
-			scene->point_lights.push_back(point_light);
+			scene.point_lights.push_back(point_light);
 		}
 
 		else if(strcmp(command, "ambient_light") == 0)
@@ -298,9 +355,9 @@ Scene *parseScene(string fileName)
 			sscanf(line, "ambient_light %f %f %f", &r, &g, &b);
 			printf("Ambient light colour (%f, %f, %f)\n", r, g, b);
 
-			scene->ambient_light.colour.x += r;
-			scene->ambient_light.colour.y += g;
-			scene->ambient_light.colour.z += b;
+			scene.ambient_light.colour.x += r;
+			scene.ambient_light.colour.y += g;
+			scene.ambient_light.colour.z += b;
 		}
 
 		else if(strcmp(command, "max_depth") == 0)
@@ -308,7 +365,7 @@ Scene *parseScene(string fileName)
 			float n;
 			sscanf(line, "max_depth %f", &n);
 			printf("max_depth %f\n", n);
-			scene->max_depth = n;
+			scene.max_depth = n;
 		}
 
 		else if(strcmp(command, "output_image") == 0)
@@ -322,7 +379,7 @@ Scene *parseScene(string fileName)
 		{
 			float x, y, z, rad, r, g, b, s, abso;
 			sscanf(line, "fog %f %f %f %f %f %f %f %f %f", &x, &y, &z, &rad, &r, &g, &b, &s, &abso);
-			scene->spherical_fog.push_back(SphericalFog(s, abso, vecmath::vec3(r, g, b), rad, vecmath::vec3(x, y, z)));
+			scene.spherical_fog.push_back(SphericalFog(s, abso, vecmath::vec3(r, g, b), rad, vecmath::vec3(x, y, z)));
 		}
 
 		else
@@ -332,9 +389,9 @@ Scene *parseScene(string fileName)
 	}
 
 	printf("\n\n\n\n\n\n");
-	for(unsigned int i = 0; i < scene->spheres.size(); i++)
+	for(unsigned int i = 0; i < scene.spheres.size(); i++)
 	{
-		scene->spheres[i].to_string();
+		scene.spheres[i].to_string();
 	}
 
 	return scene;

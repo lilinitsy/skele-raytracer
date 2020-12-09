@@ -44,20 +44,20 @@ __device__ float intensity_of(PointLight light);
 __device__ float clamp(float a, float b, float input);
 __device__ TupleOfVec3 transform_coordinate_space(vecmath::vec3 normal);
 __device__ bool intersection_occurs(Ray ray, SphereCollider collider);
-__device__ bool shadow(CudaScene **scene, vecmath::vec3 intersection_point, PointLight point_light);
-__device__ bool shadow(CudaScene **scene, vecmath::vec3 intersection_point, DirectionalLight directional_light);
+__device__ bool shadow(CudaScene scene, vecmath::vec3 intersection_point, PointLight point_light);
+__device__ bool shadow(CudaScene scene, vecmath::vec3 intersection_point, DirectionalLight directional_light);
 
 
-__device__ bool shadow(CudaScene **scene, vecmath::vec3 intersection_point, PointLight point_light)
+__device__ bool shadow(CudaScene scene, vecmath::vec3 intersection_point, PointLight point_light)
 {
 	vecmath::vec3 direction = vecmath::normalize(point_light.position - intersection_point);
 	Ray ray;
 	ray.position  = intersection_point + 0.000001f;
 	ray.direction = direction;
 
-	for(unsigned int i = 0; i < (*scene)->num_spheres; i++)
+	for(unsigned int i = 0; i < scene.num_spheres; i++)
 	{
-		if(intersection_occurs(ray, (*scene)->spheres[i].collider))
+		if(intersection_occurs(ray, scene.spheres[i].collider))
 		{
 			return true;
 		}
@@ -66,16 +66,16 @@ __device__ bool shadow(CudaScene **scene, vecmath::vec3 intersection_point, Poin
 	return false;
 }
 
-__device__ bool shadow(CudaScene **scene, vecmath::vec3 intersection_point, DirectionalLight directional_light)
+__device__ bool shadow(CudaScene scene, vecmath::vec3 intersection_point, DirectionalLight directional_light)
 {
 	vecmath::vec3 direction = vecmath::normalize(directional_light.direction);
 	Ray ray;
 	ray.position  = intersection_point + 0.000001f;
 	ray.direction = direction;
 
-	for(unsigned int i = 0; i < (*scene)->num_spheres; i++)
+	for(unsigned int i = 0; i < scene.num_spheres; i++)
 	{
-		if(intersection_occurs(ray, (*scene)->spheres[i].collider))
+		if(intersection_occurs(ray, scene.spheres[i].collider))
 		{
 			return true;
 		}
@@ -172,7 +172,7 @@ __device__ TupleOfVec3 transform_coordinate_space(vecmath::vec3 normal)
 
 
 	TupleOfVec3 transformed_coordinate_spaces;
-	transformed_coordinate_spaces.first = perp_to_normal;
+	transformed_coordinate_spaces.first	 = perp_to_normal;
 	transformed_coordinate_spaces.second = perp_to_both;
 
 	return transformed_coordinate_spaces;
@@ -234,8 +234,8 @@ __device__ float maxf(float f1, float f2)
 __device__ void swapf(float &f1, float &f2)
 {
 	float tmp = f1;
-	f1 = f2;
-	f2 = tmp;
+	f1		  = f2;
+	f2		  = tmp;
 }
 
 
