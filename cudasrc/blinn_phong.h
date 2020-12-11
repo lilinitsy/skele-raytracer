@@ -29,21 +29,19 @@ namespace bp
 				vecmath::vec3 light_direction = vecmath::normalize(scene.point_lights[i].position - intersection_point);
 
 				float distance	= vecmath::length(scene.point_lights[i].position - intersection_point);
-				float intensity = 1.0f / (distance * distance);
+				float intensity = 1.0f / powf(distance, 2.0f);
 				colour += sphere.material.diffuse * scene.point_lights[i].colour * intensity * maxf(0.0f, vecmath::dot(norm, light_direction));
 			}
 		}
 
-		/*for(unsigned int i = 0; i < scene.num_directionallights; i++)
+		for(unsigned int i = 0; i < scene.num_directionallights; i++)
 		{
 			if(!scene.use_shadows || !shadow(scene, intersection_point, scene.directional_lights[i]))
 			{
 				vecmath::vec3 light_direction = vecmath::normalize(scene.directional_lights[i].direction);
-
-				// don't know why have to change it to -norm on gpu
-				colour += sphere.material.diffuse * scene.directional_lights[i].colour * maxf(0.0f, vecmath::dot(-norm, light_direction));
+				colour += sphere.material.diffuse * scene.directional_lights[i].colour * maxf(0.0f, vecmath::dot(norm, light_direction));
 			}
-		}*/
+		}
 
 		return colour;
 	}
@@ -61,13 +59,13 @@ namespace bp
 				// This is an interpretation of the specular highlight vectors
 				vecmath::vec3 light_direction = vecmath::normalize(scene.point_lights[i].position - intersection_point);
 				vecmath::vec3 half_vector	  = (view_direction + light_direction) / vecmath::length(view_direction + light_direction);
+				half_vector = vecmath::normalize(half_vector);
 
 				float distance	= vecmath::length(scene.point_lights[i].position - intersection_point);
 				float intensity = 1.0f / powf(vecmath::length(distance), 2.0f);
 
 				// Specular lighting equation; iteratively add it for every point light
-				//colour += sphere.material.specular * scene.point_lights[i].colour * intensity * powf(maxf(0.0f, vecmath::dot(norm, half_vector)), sphere.material.power);
-				colour += sphere.material.specular * scene.point_lights[i].colour * intensity;
+				colour += sphere.material.specular * scene.point_lights[i].colour * intensity * powf(maxf(0.0f, vecmath::dot(norm, half_vector)), sphere.material.power);
 			}
 		}
 

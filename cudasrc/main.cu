@@ -37,7 +37,7 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 	vecmath::vec3 ray_dir; 
 	ray_dir = scene.camera.direction + u * scene.camera.right + v * scene.camera.up;
 	//ray_dir.y -= 1.0f; // this makes the ray_direction correct
-	//ray_dir = vecmath::normalize(ray_dir);
+	ray_dir = vecmath::normalize(ray_dir);
 
 	Ray ray;
 	ray.position  = scene.camera.position;
