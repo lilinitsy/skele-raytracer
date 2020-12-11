@@ -26,7 +26,7 @@ namespace bp
 		{
 			if(!scene.use_shadows || !shadow(scene, intersection_point, scene.point_lights[i]))
 			{
-				vecmath::vec3 light_direction = vecmath::normalize(intersection_point - scene.point_lights[i].position);
+				vecmath::vec3 light_direction = vecmath::normalize(scene.point_lights[i].position - intersection_point);
 
 				float distance	= vecmath::length(scene.point_lights[i].position - intersection_point);
 				float intensity = 1.0f / (distance * distance);
