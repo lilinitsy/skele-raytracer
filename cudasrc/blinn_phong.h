@@ -59,7 +59,7 @@ namespace bp
 				// This is an interpretation of the specular highlight vectors
 				vecmath::vec3 light_direction = vecmath::normalize(scene.point_lights[i].position - intersection_point);
 				vecmath::vec3 half_vector	  = (view_direction + light_direction) / vecmath::length(view_direction + light_direction);
-				half_vector = vecmath::normalize(half_vector);
+				half_vector					  = vecmath::normalize(half_vector);
 
 				float distance	= vecmath::length(scene.point_lights[i].position - intersection_point);
 				float intensity = 1.0f / powf(vecmath::length(distance), 2.0f);
