@@ -22,7 +22,7 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 	float inv_height = 1.0f / (float) scene.height;
 
 	float aspect_ratio = (float) scene.width / (float) scene.height;
-	float angle		   = tan(M_PI * 0.5 * option.fov / 180.0f);
+	float angle		   = tan(M_PI * 0.5f * option.fov / 180.0f);
 
 
 	if(x >= scene.width || y >= scene.height)
@@ -33,11 +33,11 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 	// This was the cpu code:
 	float u = (2 * ((x + 0.5) * inv_width) - 1) * angle * aspect_ratio;
 	float v = (1 - 2 * ((y + 0.5) * inv_height)) * angle;
-	v -= 1.0f;
 
-	// Check that ray_dir calculation is correct	
-	vecmath::vec3 ray_dir(scene.camera.direction + u * scene.camera.right + v * scene.camera.up);
-	vecmath::normalize(ray_dir);
+	vecmath::vec3 ray_dir; 
+	ray_dir = scene.camera.direction + u * scene.camera.right + v * scene.camera.up;
+	//ray_dir.y -= 1.0f; // this makes the ray_direction correct
+	//ray_dir = vecmath::normalize(ray_dir);
 
 	Ray ray;
 	ray.position  = scene.camera.position;
@@ -51,16 +51,17 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 	// initialize the random state for this pixel
 	curand_init(5351 * pixel, 0, 0, &random_state[pixel]);
 
-	//image[pixel] = vecmath::vec3((float) x / scene.width, (float) y / scene.height, 0.1f);
-	//image[pixel] = scene.spheres[1].collider.position;
-	//image[pixel] = ray.direction;
-	//image[pixel] = vecmath::vec3(v, v, v);
+	//image[pixel] = ray_dir;
 	image[pixel] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces, random_state);
+	//image[pixel] = vecmath::vec3(u, v, 1);
+	__syncthreads();
 }
 
 
 void generate_rays(Scene scene, Options option, char *output)
 {
+	scene.width = 1920;
+	scene.height = 1080;
 	// The output image that will be written to
 	size_t image_size = scene.width * scene.height * sizeof(vecmath::vec3);
 
@@ -119,7 +120,7 @@ void generate_rays(Scene scene, Options option, char *output)
 			int index = i * scene.width + j;
 
 
-			//printf("pixel[%d]: %f %f %f\n", index, image_host[index].x, image_host[index].y, image_host[index].z);
+			printf("pixel[%d]: %f %f %f\n", index, image_host[index].x, image_host[index].y, image_host[index].z);
 		
 
 			ofs << (unsigned char) (std::min(float(1), image_host[index].x) * 255) << (unsigned char) (std::min(float(1), image_host[index].y) * 255) << (unsigned char) (std::min(float(1), image_host[index].z) * 255);
@@ -130,7 +131,43 @@ void generate_rays(Scene scene, Options option, char *output)
 
 	cudaFree(image);
 	printf("max depth: %d\n", option.max_depth);
+	printf("OldSCeneStruct num vertices and num triangles: %d %d\n", scene.vertices.size(), scene.triangles.size());
+	printf("Host scene struct num vertices and num triangles: %d %d\n", host_cuda_scene.num_vertices, host_cuda_scene.num_triangles);
+
+	for(int i = 0; i < host_cuda_scene.num_spheres; i++)
+	{
+		host_cuda_scene.spheres[i].to_string();
+		printf("\n");
+	}
+
+	printf("Shadows: %d\n", host_cuda_scene.use_shadows);
 	// make sure to free up the scene
+
+
+
+
+
+
+
+	// Normalize tests
+	vecmath::vec3 v1 = vecmath::vec3(1.0f, 1.0f, 1.0f);
+	vecmath::vec3 v2 = vecmath::vec3(3.0f, 3.0f, 3.0f);
+	vecmath::vec3 v3 = vecmath::vec3(9.4f, 0.3f, -8.4f);
+	vecmath::vec3 v4 = vecmath::vec3(0.0f, 0.0f, 1.0f);
+	vecmath::vec3 v5 = vecmath::vec3(8.3f, 0.0f, 3.4f);
+
+	float f1 = vecmath::length(v1 - v2);
+	float f2 = vecmath::length(v2 - v3);
+	float f3 = vecmath::length(v3 - v4);
+	float f4 = vecmath::length(v4 - v5);
+	float f5 = vecmath::length(v5 - v1);
+
+	printf("f1: %f\n", f1);
+	printf("f2: %f\n", f2);
+	printf("f3: %f\n", f3);
+	printf("f4: %f\n", f4);
+	printf("f5: %f\n", f5);
+	
 }
 
 
@@ -140,8 +177,8 @@ int main(int argc, char *argv[])
 	Options option;
 	Scene scene;
 
-	int width  = 1920;
-	int height = 1080;
+	int width  = 1024;
+	int height = 768;
 	char *path;
 	char *output;
 

@@ -58,19 +58,9 @@ namespace vecmath
 		return os;
 	}
 
-	__host__ __device__ vec3 normalize(vec3 v)
-	{
-		float k = 1.0 / sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-		v.x *= k;
-		v.y *= k;
-		v.z *= k;
-
-		return v;
-	}
-
 	__host__ __device__ inline vec3 operator+(const vec3 &v1, const vec3 &v2)
 	{
-		return vec3(v1.x + v2.x, v1.z + v2.y, v1.z + v2.z);
+		return vec3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
 	}
 
 	__host__ __device__ inline vec3 operator+(const vec3 &v, const float &f)
@@ -189,6 +179,11 @@ namespace vecmath
 	__host__ __device__ inline float length(const float &f)
 	{
 		return sqrt(f * f);
+	}
+
+	__host__ __device__ vec3 normalize(vec3 v)
+	{
+		return v / length(v);
 	}
 
 	__host__ std::string to_string(vec3 v)

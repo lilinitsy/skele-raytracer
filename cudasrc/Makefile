@@ -21,4 +21,4 @@ raytracer.o: $(SRCS) $(INCS)
 	$(NVCC) $(NVCCFLAGS) $(GENCODE_FLAGS) -o raytracer.o -c main.cu
 
 clean:
-	rm -f raytracer raytracer.o
+	rm -f raytracer raytracer.o *.txt

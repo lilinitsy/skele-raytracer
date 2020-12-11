@@ -38,7 +38,9 @@ __device__ vecmath::vec3 direct_illumination(Ray ray, CudaScene scene, Sphere in
 	vecmath::vec3 total_colour = vecmath::vec3(0.0f, 0.0f, 0.0f);
 	total_colour += bp::ambient_shading(scene, intersected_sphere);
 	total_colour += bp::diffuse_shading(scene, intersected_sphere, intersection_point, intersection_point_normal);
-	total_colour += bp::specular_shading(scene, intersected_sphere, intersection_point, intersection_point_normal);
+
+	return total_colour;
+	/*total_colour += bp::specular_shading(scene, intersected_sphere, intersection_point, intersection_point_normal);
 
 	// Fresnel effect for refraction
 	float fr = bp::fresnel(ray.direction, intersection_point_normal, intersected_sphere);
@@ -64,7 +66,7 @@ __device__ vecmath::vec3 direct_illumination(Ray ray, CudaScene scene, Sphere in
 				refracted_ray.direction = refraction_ray_direction;
 
 				// Recursively call the shade function using the refracted ray, with one fewer depth
-				refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces, random_state);
+				//refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces, random_state);
 			}
 
 			// Add in the reflection colour recursively
@@ -72,7 +74,7 @@ __device__ vecmath::vec3 direct_illumination(Ray ray, CudaScene scene, Sphere in
 			Ray reflected_ray;
 			reflected_ray.position	= intersection_point;
 			reflected_ray.direction = reflected_ray_direction;
-			reflection_colour += (1 - fr) * intersected_sphere.material.specular * shade(reflected_ray, scene, depth - 1, monte_carlo, num_path_traces, random_state);
+			//reflection_colour += (1 - fr) * intersected_sphere.material.specular * shade(reflected_ray, scene, depth - 1, monte_carlo, num_path_traces, random_state);
 		}
 
 		// This does the same code for every directional light; obviously this could've been vastly modularized
@@ -87,18 +89,18 @@ __device__ vecmath::vec3 direct_illumination(Ray ray, CudaScene scene, Sphere in
 				refracted_ray.position	= intersection_point;
 				refracted_ray.direction = refraction_ray_direction;
 
-				refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces, random_state);
+				//refraction_colour = fr * shade(refracted_ray, scene, depth - 1, monte_carlo, num_path_traces, random_state);
 			}
 
 			vecmath::vec3 reflected_ray_direction = bp::reflect_direction(light_direction, intersection_point_normal);
 			Ray reflected_ray;
 			reflected_ray.position	= intersection_point;
 			reflected_ray.direction = reflected_ray_direction;
-			reflection_colour += (1 - fr) * intersected_sphere.material.specular * shade(reflected_ray, scene, depth - 1, monte_carlo, num_path_traces, random_state);
+			//reflection_colour += (1 - fr) * intersected_sphere.material.specular * shade(reflected_ray, scene, depth - 1, monte_carlo, num_path_traces, random_state);
 		}
 	}
 
-	return total_colour + refraction_colour + reflection_colour;
+	return total_colour + refraction_colour + reflection_colour;*/
 }
 
 
@@ -187,12 +189,30 @@ __device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_c
 
 	if(hit_a_sphere)
 	{
-		return vecmath::vec3(1.0f, 1.0f, 1.0f);
+		// ray.direction is the SAME
+		// ray.position is the SAME
+		vecmath::vec3 e_c = ray.position - intersected_sphere.collider.position; // e_c matches to e_c in cpu
+		float a			  = vecmath::dot(ray.direction, ray.direction);
+		float b			  = 2 * vecmath::dot(ray.direction, e_c);
+		float c			  = vecmath::dot(e_c, e_c) - intersected_sphere.collider.radius * intersected_sphere.collider.radius;
+		float t			  = smallest_root(a, b, c); // t's match
+
+		// Calculating the intersection point and the normal; the normal doesn't really need to be calculated seperately
+		vecmath::vec3 intersection_point		= ray.position + ray.direction * t; // ray_direction * t is the same, verified by a diff, and so is ray.position
+		vecmath::vec3 intersection_point_normal = intersection_point - intersected_sphere.collider.position;
+		vecmath::vec3 normalized_intersection_point_normal = vecmath::normalize(intersection_point_normal);
+		// = vecmath::normalize(intersection_point - intersected_sphere.collider.position);
+
+		// Get the direct illumination value; this is light that shines from light sources rather than the global illumination implementation
+		vecmath::vec3 direct_colour = direct_illumination(ray, scene, intersected_sphere, intersection_point, intersection_point_normal, depth, monte_carlo, num_path_traces, random_state);
+		//return direct_colour;
+
+		return direct_colour;
 	}
 
 	if(hit_a_triangle)
 	{
-		return vecmath::vec3(0.0f, 0.5f, 0.3f);
+		return scene.background;
 	}
 
 	return vecmath::vec3(0.1f, 0.8f, 0.8f);
