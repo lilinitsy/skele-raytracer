@@ -29,7 +29,7 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	}
 	
 	if(blockIdx.x<nums){	
-	spheres[i]=scene.spheres[blockIdx.x];
+	spheres[i]=scene.spheres[i];
 	}
 	int pixelx=((threadIdx.x + blockIdx.x * blockDim.x)/nums)%32;
 	if(i==0){
@@ -54,9 +54,9 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	
 	if(i<num_of_sphere){
 	//printf("distance%f",distance);
-	if(intersection_occurs(currentray, scene.spheres[i].collider)){
+	if(intersection_occurs(currentray,spheres[i].collider)){
 	hit_a_sphere   = true;
-	distance = collision_distance(currentray, scene.spheres[i].collider);
+	distance = collision_distance(currentray, spheres[i].collider);
 	distance*=1000000;
 	atomicMin(&min_distance[pixelx][threadIdx.y],int(distance));
 	// if(distance < min_distance[threadIdx.x/nums][threadIdx.y])
@@ -94,7 +94,7 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	{
 		// ray.direction is the SAME
 		// ray.position is the SAME
-		intersected_sphere =scene.spheres[i];
+		intersected_sphere =spheres[i];
 		vecmath::vec3 e_c = currentray.position - intersected_sphere.collider.position; // e_c matches to e_c in cpu
 		float a			  = vecmath::dot(currentray.direction, currentray.direction);
 		float b			  = 2 * vecmath::dot(currentray.direction, e_c);
