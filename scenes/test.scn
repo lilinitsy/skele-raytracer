@@ -2,7 +2,7 @@ max_depth 10
 
 camera 0 0 -20 0 0 1 0 1 0 30
 film_resolution 1024 768
-output_image foo.bmp
+output_image foo.jpg
 
 max_vertices 10000
 max_normals 10000

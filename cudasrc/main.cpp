@@ -87,6 +87,8 @@ void generate_rays(Scene scene, Options option, char *output)
 	{
 		for(int j = 0; j < scene.width; j++)
 		{
+			if(i==10&&j==10)
+			printf("pixel[%d]: %f %f %f\n", index, image_host[index].x, image_host[index].y, image_host[index].z);
 			ofs << (unsigned char) (std::min(float(1), image[i][j].x) * 255) << (unsigned char) (std::min(float(1), image[i][j].y) * 255) << (unsigned char) (std::min(float(1), image[i][j].z) * 255);
 		}
 	}

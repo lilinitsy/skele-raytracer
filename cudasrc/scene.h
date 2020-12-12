@@ -27,6 +27,7 @@ struct Scene
 	vecmath::vec3 background;
 	int max_depth	 = 1;
 	bool use_shadows = false;
+	int numberofobject =0;
 
 	size_t size()
 	{
@@ -143,7 +144,10 @@ struct CudaScene
 	}
 };
 
+void allocate_constant_cudascene(CudaScene scene){
 
+	
+}
 CudaScene allocate_device_cudascene_struct(CudaScene scene)
 {
 	CudaScene device_scene = scene;
@@ -231,7 +235,7 @@ Scene parseScene(string fileName)
 		{
 			float x, y, z;
 			sscanf(line, "vertex %f %f %f", &x, &y, &z);
-			printf("Vertex at position (%f, %f, %f)\n", x, y, z);
+			//printf("Vertex at position (%f, %f, %f)\n", x, y, z);
 			scene.vertices.push_back(vecmath::vec3(x, y, z));
 		}
 
@@ -239,7 +243,7 @@ Scene parseScene(string fileName)
 		{
 			float v0, v1, v2;
 			sscanf(line, "triangle %f %f %f", &v0, &v1, &v2);
-			printf("Triangle with vertices (%f, %f, %f)\n", v0, v1, v2);
+		//	printf("Triangle with vertices (%f, %f, %f)\n", v0, v1, v2);
 			vecmath::vec3 first_vert  = scene.vertices[v0];
 			vecmath::vec3 second_vert = scene.vertices[v1];
 			vecmath::vec3 third_vert  = scene.vertices[v2];
