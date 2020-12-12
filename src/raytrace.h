@@ -41,6 +41,7 @@ glm::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_sphere, g
 	total_colour += bp::diffuse_shading(scene, intersected_sphere, intersection_point, intersection_point_normal);
 	total_colour += bp::specular_shading(scene, intersected_sphere, intersection_point, intersection_point_normal);
 
+	return total_colour;
 	// Fresnel effect for refraction
 	float fr = bp::fresnel(ray.direction, intersection_point_normal, intersected_sphere);
 
@@ -219,7 +220,7 @@ glm::vec3 shade(Ray ray, Scene scene, int depth, bool monte_carlo, short num_pat
 
 	if(hit_a_triangle)
 	{
-		printf("HIT A TRIANGLE AT DISTANCE %f\n", min_distance);
+		return glm::vec3(0.0f, 0.0f, 0.0f);
 	}
 
 	return glm::vec3(0.0f, 0.0f, 0.0f);
