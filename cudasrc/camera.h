@@ -11,7 +11,7 @@ struct Camera
 	vecmath::vec3 right;
 	float half_height_angle;
 
-	Camera()
+	__host__ __device__ Camera()
 	{
 		position  = vecmath::vec3(0, 0, 0);
 		direction = vecmath::vec3(0, 0, 0);
@@ -19,7 +19,7 @@ struct Camera
 		right	  = vecmath::cross(direction * -1.0f, up);
 	}
 
-	Camera(vecmath::vec3 pos, vecmath::vec3 dir, vecmath::vec3 u, float h)
+	__host__ __device__  Camera(vecmath::vec3 pos, vecmath::vec3 dir, vecmath::vec3 u, float h)
 	{
 		position		  = pos;
 		direction		  = dir;
@@ -27,6 +27,7 @@ struct Camera
 		half_height_angle = h;
 		right			  = vecmath::cross(direction * -1.0f, up);
 	}
+	__host__ __device__ ~Camera(){ }
 };
 
 #endif

@@ -14,6 +14,16 @@ struct Material
 
 	float power = 1.0f;
 	float ior	= 1.0f;
+	// __host__ __device__ Material(){
+	// vecmath::vec3 ambient	   = vecmath::vec3(0, 0, 0);
+	// vecmath::vec3 diffuse	   = vecmath::vec3(0, 0, 0);
+	// vecmath::vec3 specular	   = vecmath::vec3(0, 0, 0);
+	// vecmath::vec3 transmissive = vecmath::vec3(0, 0, 0);
+
+	// float power = 1.0f;
+	// float ior	= 1.0f;
+	// }
+	
 
 	void to_string()
 	{

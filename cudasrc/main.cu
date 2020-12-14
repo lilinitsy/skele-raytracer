@@ -9,11 +9,17 @@
 
 #include "raytrace.h"
 #include "vec3.h"
+#include "camera.h"
+
 //__constant__  CudaScene scene;
 #define BLOCK_SIZEX 32
 #define BLOCK_SIZEy 32
 
 void generate_rays(Scene scene, Options option, char *output);
+__constant__ int w;
+__constant__ int h;
+//__constant__ Camera camera;
+
 
 __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 pos,int nums,CudaScene scene, int depth, bool monte_carlo, short num_path_traces, curandState *random_state)
 {    
@@ -23,7 +29,7 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	int x = (threadIdx.x + blockIdx.x * blockDim.x)/nums; 
 	int i=(threadIdx.x + blockIdx.x * blockDim.x)%nums;//correspons to object i;
 	int y = threadIdx.y + blockIdx.y * blockDim.y;
-	if(x >= scene.width || y >= scene.height)
+	if(x >= w || y >= h)
 	{
 		return;
 	}
@@ -33,11 +39,11 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	}
 	int pixelx=((threadIdx.x + blockIdx.x * blockDim.x)/nums)%32;
 	if(i==0){
-		min_distance[pixelx][threadIdx.y]=INFINITY;
+		min_distance[pixelx][threadIdx.y]=INT_MAX;
 	}
 	__syncthreads();
 
-	int pixel = y * scene.width + x;
+	int pixel = y * w + x;
 	//float min_distance = INFINITY;
 	Sphere intersected_sphere;
 	bool hit_a_sphere = false;
@@ -51,7 +57,7 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	bool hit_a_triangle = false;
 	float distance=INFINITY;
 	int num_of_sphere=scene.num_spheres;
-	
+	// find minimun distance for each object
 	if(i<num_of_sphere){
 	//printf("distance%f",distance);
 	if(intersection_occurs(currentray,spheres[i].collider)){
@@ -59,13 +65,6 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	distance = collision_distance(currentray, spheres[i].collider);
 	distance*=1000000;
 	atomicMin(&min_distance[pixelx][threadIdx.y],int(distance));
-	// if(distance < min_distance[threadIdx.x/nums][threadIdx.y])
-	// {
-	// 	distance*=10000;
-	// 	atomicExch(&min_distance[threadIdx.x/nums][threadIdx.y],int(distance));
-	// 			//atomicAdd(int* address, int val);
-	// 			//min_distance[x][y]= distance;
-	// 	}
  	}
    }else{//traiangle
 		float t;
@@ -123,8 +122,7 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	return;
 }
 
-
-__global__ void ray_generation(vecmath::vec3 *outputray, Camera camera, int w,int h,Options option, curandState *random_state)
+__global__ void ray_generation(vecmath::vec3 *outputray,Options option, curandState *random_state, Camera camera)
 {
 	
 	
@@ -204,6 +202,7 @@ void generate_rays(Scene scene, Options option, char *output)
 	CudaScene cuda_scene_data = allocate_device_cudascene_struct(host_cuda_scene);
 
 	// Can test different block sizes; this will give us 16 * 16 = 256 = 32 * 8 warps.
+	int numofobject=cuda_scene_data.num_spheres;
 
  	int thread_x = 30;
 	int thread_y = 30;
@@ -214,7 +213,7 @@ void generate_rays(Scene scene, Options option, char *output)
 	blocks.y = scene.height / thread_y + 1;
 	blocks.z = 1;
 
-	dim3 grid;  
+	dim3 grid;         // blocksize 
 	grid.x = thread_x;
 	grid.y = thread_y;
 	grid.z = 1;
@@ -225,16 +224,21 @@ void generate_rays(Scene scene, Options option, char *output)
 	cudaEventCreate(&start);
     cudaEventCreate(&stop);
 	cudaEventRecord( start,0);
-    int numofobject=cuda_scene_data.num_spheres;
   //  cudaMemcpyToSymbol(Mc, M.elements, KERNEL_SIZE*KERNEL_SIZE*sizeof(float));
 	cudaMemcpy(image, image_host, image_size, cudaMemcpyHostToDevice);
 	cudaMemcpy(raydir, ray_host, image_size, cudaMemcpyHostToDevice);
 
+   // constant memory
+   cudaMemcpyToSymbol(w,&scene.width,sizeof(int));
+   cudaMemcpyToSymbol(h,&scene.height,sizeof(int));
+   //cudaMemcpyToSymbol(camera, &scene.camera, sizeof(scene.camera));
+
+
 	//allocate_constant_cudascene(host_cuda_scene);
 
 	// Launch kernel
-	ray_generation<<<blocks, grid>>>(raydir,cuda_scene_data.camera,scene.width,scene.height, option, random_state);//return a raydir
-//	cudaMemcpyToSymbol(scene,host_cuda_scene,host_cuda_scene.size())
+	ray_generation<<<blocks, grid>>>(raydir, option, random_state,scene.camera);//return a raydir
+
     cudaDeviceSynchronize();
     blocks.x*=numofobject;
 	shade<<<blocks,grid>>>(image,raydir,cuda_scene_data.camera.position,numofobject,cuda_scene_data, option.max_depth, option.monte_carlo, option.num_path_traces, random_state); //return color;

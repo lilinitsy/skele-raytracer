@@ -12,6 +12,12 @@ struct Sphere
 {
 	SphereCollider collider;
 	Material material;
+	// __host__ __device__ Sphere(){ 
+
+	//    } // change this line
+    //  __host__ __device__ Sphere(){
+
+	//  }
 
 	void to_string()
 	{
@@ -19,8 +25,8 @@ struct Sphere
 				  << "radius: " << collider.radius << std::endl;
 		material.to_string();
 	}
-};
 
+};
 
 struct Triangle
 {
