@@ -62,6 +62,99 @@ void generate_rays(Scene scene, Options option, char *output)
 	scene.width	 = 1920;
 	scene.height = 1080;
 
+
+
+	// Input Binning Starts
+
+	// With camera.position and camera.up & right, we have two planes Ax+By+Cz+D=0, calculate D first
+	// A, B, C are just from up and right vectors (they are normal vectors to the above planes)
+	float Dup = -1.0 * vecmath::dot(scene.camera.up, scene.camera.position);
+	float Dright = -1.0 * vecmath::dot(scene.camera.right, scene.camera.position);
+	float lengthup = vecmath::length(scene.camera.up);
+	float lengthright = vecmath::length(scene.camera.right);
+
+	// Then, for each sphere, check two things:
+	// 1) its relationship with up and right planes;
+	// 2) the distance of its center to these two planes vs. its radius;
+	// Quadrant 1=top left; 2=top right; 3=bottom left; 4=bottom right;
+	// Use prime numbers 2,3,5,7 to index them as a sphere may stay in multiple quadrants;
+	for (unsigned int i = 0; i < scene.spheres.size(); i++)
+	{
+		float up = vecmath::dot(scene.camera.up, scene.spheres[i].collider.position) + Dup;
+		bool isup = (up >= 0);
+		float DistanceToUp = abs(up) / lengthup;
+		bool AwayFromUp = (DistanceToUp >= scene.spheres[i].collider.radius);
+
+		float right = vecmath::dot(scene.camera.right, scene.spheres[i].collider.position) + Dright;
+		bool isright = (right >= 0);
+		float DistanceToRight = abs(right) / lengthright;
+		bool AwayFromRight = (DistanceToRight >= scene.spheres[i].collider.radius);
+
+		if(!AwayFromUp)
+		{
+			if(!AwayFromRight)
+			{
+				scene.spheres[i].collider.quadrant *= 210; // In quadrant 1,2,3,4;
+			}
+			else
+			{
+				if(isright)
+				{
+					scene.spheres[i].collider.quadrant *= 21; // In quadrant 2,4;
+				}
+				else
+				{
+					scene.spheres[i].collider.quadrant *= 10; // In quadrant 1,3;
+				}
+			}
+		}
+		else
+		{
+			if(isup)
+			{
+				if(!AwayFromRight)
+				{
+					scene.spheres[i].collider.quadrant *= 6; // In quadrant 1,2;
+				}
+				else
+				{
+					if(isright)
+					{
+						scene.spheres[i].collider.quadrant *= 3; // In quadrant 2;
+					}
+					else
+					{
+						scene.spheres[i].collider.quadrant *= 2; // In quadrant 1;
+					}
+				}
+			}
+			else
+			{
+				if(!AwayFromRight)
+				{
+					scene.spheres[i].collider.quadrant *= 35; // In quadrant 3,4;
+				}
+				else
+				{
+					if(isright)
+					{
+						scene.spheres[i].collider.quadrant *= 7; // In quadrant 4;
+					}
+					else
+					{
+						scene.spheres[i].collider.quadrant *= 5; // In quadrant 3;
+					}
+				}
+			}
+		}
+
+	}
+
+	// Create arrays for spheres in four quadrants and send them to shared memory later (?);
+
+
+	// Input Binning Ends
+
 	// The output image that will be written to
 	size_t image_size = scene.width * scene.height * sizeof(vecmath::vec3);
 
@@ -81,98 +174,6 @@ void generate_rays(Scene scene, Options option, char *output)
 
 	// The CudaScene that will be passed to the device.
 	CudaScene cuda_scene_data = allocate_device_cudascene_struct(host_cuda_scene);
-
-
-
-	// Input Binning Starts
-
-	// With camera.position and camera.up & right, we have two planes Ax+By+Cz+D=0, calculate D first
-	// A, B, C are just from up and right vectors (they are normal vectors to the above planes)
-	float Dup = -1.0 * vecmath::dot(cuda_scene_data.camera.up, cuda_scene_data.camera.position);
-	float Dright = -1.0 * vecmath::dot(cuda_scene_data.camera.right, cuda_scene_data.camera.position);
-	float lengthup = vecmath::length(cuda_scene_data.camera.up);
-	float lengthright = vecmath::length(cuda_scene_data.camera.right);
-
-	// Then, for each sphere, check two things:
-	// 1) its relationship with up and right planes;
-	// 2) the distance of its center to these two planes vs. its radius;
-	// Quadrant 1=top left; 2=top right; 3=bottom left; 4=bottom right;
-	// Use prime numbers 2,3,5,7 to index them as a sphere may stay in multiple quadrants;
-	for (unsigned int i = 0; i < cuda_scene_data.num_spheres; i++)
-	{
-		float up = vecmath::dot(cuda_scene_data.camera.up, cuda_scene_data.spheres[i].collider.position) + Dup;
-		bool isup = (up >= 0);
-		float DistanceToUp = abs(up) / lengthup;
-		bool AwayFromUp = (DistanceToUp >= cuda_scene_data.spheres[i].collider.radius);
-
-		float right = vecmath::dot(cuda_scene_data.camera.right, cuda_scene_data.spheres[i].collider.position) + Dright;
-		bool isright = (right >= 0);
-		float DistanceToRight = abs(right) / lengthright;
-		bool AwayFromRight = (DistanceToRight >= cuda_scene_data.spheres[i].collider.radius);
-
-		if(!AwayFromUp)
-		{
-			if(!AwayFromRight)
-			{
-				cuda_scene_data.spheres[i].collider.quadrant *= 210; // In quadrant 1,2,3,4;
-			}
-			else
-			{
-				if(isright)
-				{
-					cuda_scene_data.spheres[i].collider.quadrant *= 21; // In quadrant 2,4;
-				}
-				else
-				{
-					cuda_scene_data.spheres[i].collider.quadrant *= 10; // In quadrant 1,3;
-				}
-			}
-		}
-		else
-		{
-			if(isup)
-			{
-				if(!AwayFromRight)
-				{
-					cuda_scene_data.spheres[i].collider.quadrant *= 6; // In quadrant 1,2;
-				}
-				else
-				{
-					if(isright)
-					{
-						cuda_scene_data.spheres[i].collider.quadrant *= 3; // In quadrant 2;
-					}
-					else
-					{
-						cuda_scene_data.spheres[i].collider.quadrant *= 2; // In quadrant 1;
-					}
-				}
-			}
-			else
-			{
-				if(!AwayFromRight)
-				{
-					cuda_scene_data.spheres[i].collider.quadrant *= 35; // In quadrant 3,4;
-				}
-				else
-				{
-					if(isright)
-					{
-						cuda_scene_data.spheres[i].collider.quadrant *= 7; // In quadrant 4;
-					}
-					else
-					{
-						cuda_scene_data.spheres[i].collider.quadrant *= 5; // In quadrant 3;
-					}
-				}
-			}
-		}
-
-	}
-
-	// Create arrays for spheres in four quadrants and send them to shared memory later (?);
-
-	// Input Binning Ends
 
 	// Can test different block sizes; this will give us 16 * 16 = 256 = 32 * 8 warps.
 	int thread_x = 16;
