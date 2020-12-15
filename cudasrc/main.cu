@@ -115,10 +115,16 @@ void generate_rays(Scene scene, Options option, char *output)
 
 	// With camera.position and camera.up & right, we have two planes Ax+By+Cz+D=0, calculate D first
 	// A, B, C are just from up and right vectors (they are normal vectors to the above planes)
-	float Dup = -1.0 * vecmath::dot(scene.camera.up, scene.camera.position);
+
+	// float Dup = -1.0 * vecmath::dot(scene.camera.up, scene.camera.position);
+	// float lengthup = vecmath::length(scene.camera.up);
 	float Dright = -1.0 * vecmath::dot(scene.camera.right, scene.camera.position);
-	float lengthup = vecmath::length(scene.camera.up);
 	float lengthright = vecmath::length(scene.camera.right);
+
+	// If camera.up & right & direction are not orthogonal:
+	vecmath::vec3 OrthogonalUp = vecmath::cross(-1.0f * scene.camera.right, scene.camera.direction);
+	float Dup = -1.0 * vecmath::dot(OrthogonalUp, scene.camera.position);
+	float lengthup = vecmath::length(OrthogonalUp);
 
 	int Q1Array[scene.spheres.size()];
 	int Q2Array[scene.spheres.size()];
@@ -130,6 +136,10 @@ void generate_rays(Scene scene, Options option, char *output)
 	int Q3Idx = 0;
 	int Q4Idx = 0;
 
+	// printf("camera.up= %f, %f, %f \n", scene.camera.up.x, scene.camera.up.y, scene.camera.up.z);
+	// printf("camera.right= %f, %f, %f \n", scene.camera.right.x, scene.camera.right.y, scene.camera.right.z);
+	// printf("camera.dir= %f, %f, %f \n", scene.camera.direction.x, scene.camera.direction.y, scene.camera.direction.z);
+
 	// Then, for each sphere, check two things:
 	// 1) its relationship with up and right planes;
 	// 2) the distance of its center to these two planes vs. its radius;
@@ -137,7 +147,12 @@ void generate_rays(Scene scene, Options option, char *output)
 	// Use prime numbers 2,3,5,7 to index them as a sphere may stay in multiple quadrants;
 	for (unsigned int i = 0; i < scene.spheres.size(); i++)
 	{
-		float up = vecmath::dot(scene.camera.up, scene.spheres[i].collider.position) + Dup;
+		// float up = vecmath::dot(scene.camera.up, scene.spheres[i].collider.position) + Dup;
+		// bool isup = (up >= 0);
+		// float DistanceToUp = abs(up) / lengthup;
+		// bool AwayFromUp = (DistanceToUp > scene.spheres[i].collider.radius);
+
+		float up = vecmath::dot(OrthogonalUp, scene.spheres[i].collider.position) + Dup;
 		bool isup = (up >= 0);
 		float DistanceToUp = abs(up) / lengthup;
 		bool AwayFromUp = (DistanceToUp > scene.spheres[i].collider.radius);
@@ -147,6 +162,11 @@ void generate_rays(Scene scene, Options option, char *output)
 		float DistanceToRight = abs(right) / lengthright;
 		bool AwayFromRight = (DistanceToRight > scene.spheres[i].collider.radius);
 
+		// printf("i = %d \n", i);
+		// printf("radius: %f \n", scene.spheres[i].collider.radius);
+		// printf("DistanceToUp: %f \n", DistanceToUp);
+		// printf("DistanceToRight: %f \n", DistanceToRight);
+		// printf("AwayFromUp: %d, AwayFromRight: %d \n", AwayFromUp, AwayFromRight);
 		if(!AwayFromUp)
 		{
 			if(!AwayFromRight)
@@ -171,7 +191,6 @@ void generate_rays(Scene scene, Options option, char *output)
 					Q2Idx += 1;
 					Q4Idx += 1;
 				}
-
 				else
 				{
 					// In quadrant 1,3;
@@ -220,7 +239,6 @@ void generate_rays(Scene scene, Options option, char *output)
 					Q3Idx += 1;
 					Q4Idx += 1;
 				}
-
 				else
 				{
 					if(isright)
@@ -239,13 +257,25 @@ void generate_rays(Scene scene, Options option, char *output)
 			}
 		}
 
+		// printf("Array1: ");
+		// for(int ii=0; ii<Q1Idx; ii++){printf("%d ", Q1Array[ii]);}
+		// printf("\n");
+		// printf("Array2: ");
+		// for(int ii=0; ii<Q2Idx; ii++){printf("%d ", Q2Array[ii]);}
+		// printf("\n");
+		// printf("Array3: ");
+		// for(int ii=0; ii<Q3Idx; ii++){printf("%d ", Q3Array[ii]);}
+		// printf("\n");
+		// printf("Array4: ");
+		// for(int ii=0; ii<Q4Idx; ii++){printf("%d ", Q4Array[ii]);}
+		// printf("\n");
 	}
 
-	printf("%d %d %d", Q1Array[0],Q1Array[1],Q1Array[2]);
 	int numq1 = Q1Idx;
 	int numq2 = Q2Idx;
-	int numq3= Q3Idx;
+	int numq3 = Q3Idx;
 	int numq4 = Q4Idx;
+	printf("%d %d %d %d \n", numq1, numq2, numq3, numq4);
 
 	int* d_Q1Array;
 	int* d_Q2Array;
