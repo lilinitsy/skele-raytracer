@@ -18,10 +18,16 @@
 void generate_rays(Scene scene, Options option, char *output);
 __constant__ int w;
 __constant__ int h;
+__constant__ int depth;
+__constant__ bool monte_carlo;
+__constant__ short num_path_traces;
+__constant__ int nums;
+__constant__ float fov;
+
 //__constant__ Camera camera;
 
 
-__global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 pos,int nums,CudaScene scene, int depth, bool monte_carlo, short num_path_traces, curandState *random_state)
+__global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 pos,CudaScene scene, curandState *random_state)
 {    
 	__shared__ int min_distance[32][32];// need to be change
 	__shared__ Sphere spheres[100];
@@ -66,7 +72,8 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	distance*=1000000;
 	atomicMin(&min_distance[pixelx][threadIdx.y],int(distance));
  	}
-   }else{//traiangle
+   }
+   else{//traiangle
 		float t;
 		float u;
 		float v;
@@ -122,8 +129,8 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	return;
 }
 
-__global__ void ray_generation(vecmath::vec3 *outputray,Options option, curandState *random_state, Camera camera)
-{
+__global__ void ray_generation(vecmath::vec3 *outputray, Camera camera)
+{  
 	
 	
 	int x = threadIdx.x + blockIdx.x * blockDim.x;
@@ -133,7 +140,7 @@ __global__ void ray_generation(vecmath::vec3 *outputray,Options option, curandSt
 	float inv_height = 1.0f / (float) h;
 
 	float aspect_ratio = (float) w / (float) h;
-	float angle		   = tan(M_PI * 0.5f * option.fov / 180.0f);
+	float angle		   = tan(M_PI * 0.5f * fov / 180.0f);
 
 
 	if(x >= w || y >= h)
@@ -189,6 +196,9 @@ void generate_rays(Scene scene, Options option, char *output)
 	cudaMalloc((void **) &image, image_size);
 	vecmath::vec3 *raydir;
 	cudaMalloc((void **) &raydir, image_size);
+	
+	
+	
 
 	// Random state to get CUDA RNG
 	curandState *random_state;
@@ -207,13 +217,13 @@ void generate_rays(Scene scene, Options option, char *output)
  	int thread_x = 30;
 	int thread_y = 30;
 
-	dim3 blocks;  //this is actually number of grid
+	dim3 blocks;  // how many block
 	blocks.x = scene.width / thread_x + 1;
 	
 	blocks.y = scene.height / thread_y + 1;
 	blocks.z = 1;
 
-	dim3 grid;         // blocksize 
+	dim3 grid;         // block size  
 	grid.x = thread_x;
 	grid.y = thread_y;
 	grid.z = 1;
@@ -231,17 +241,23 @@ void generate_rays(Scene scene, Options option, char *output)
    // constant memory
    cudaMemcpyToSymbol(w,&scene.width,sizeof(int));
    cudaMemcpyToSymbol(h,&scene.height,sizeof(int));
+   cudaMemcpyToSymbol(depth,&option.max_depth,sizeof(int));
+   cudaMemcpyToSymbol(monte_carlo,&option.monte_carlo,sizeof(int));
+   cudaMemcpyToSymbol(num_path_traces,&option.num_path_traces,sizeof(int));
+   cudaMemcpyToSymbol(nums,&numofobject,sizeof(int));
+   cudaMemcpyToSymbol(fov,&option.fov,sizeof(int));
+
    //cudaMemcpyToSymbol(camera, &scene.camera, sizeof(scene.camera));
 
 
 	//allocate_constant_cudascene(host_cuda_scene);
 
 	// Launch kernel
-	ray_generation<<<blocks, grid>>>(raydir, option, random_state,scene.camera);//return a raydir
+	ray_generation<<<blocks, grid>>>(raydir,scene.camera);//return a raydir
 
     cudaDeviceSynchronize();
     blocks.x*=numofobject;
-	shade<<<blocks,grid>>>(image,raydir,cuda_scene_data.camera.position,numofobject,cuda_scene_data, option.max_depth, option.monte_carlo, option.num_path_traces, random_state); //return color;
+	shade<<<blocks,grid>>>(image,raydir,scene.camera.position,cuda_scene_data, random_state); //return color;
 	// Copy the memory back to the host and then synchronize
 	cudaMemcpy(image_host, image, image_size, cudaMemcpyDeviceToHost);
 	cudaDeviceSynchronize();
@@ -251,7 +267,6 @@ void generate_rays(Scene scene, Options option, char *output)
 	cudaEventElapsedTime( &time, start, stop );
 	cudaEventDestroy( start );
 	cudaEventDestroy( stop );
-	printf("ConvolutionKernel\n");
 	printf("GPU time used:%f ms\n",time);
 	// Read back on the host
 	std::ofstream ofs(output, std::ios::out | std::ios::binary);
