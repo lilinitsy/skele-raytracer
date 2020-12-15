@@ -33,6 +33,7 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 		return;
 	}
 
+	int num;
 	if(x <= scene.width/2)
 	{
 		if(y <= scene.height/2)
@@ -41,6 +42,7 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 			{
 				qspheres[i] = scene.spheres[q1array[i]];
 			}
+			num = numq1;
 		}
 		else
 		{
@@ -48,6 +50,7 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 			{
 				qspheres[i] = scene.spheres[q3array[i]];
 			}
+			num = numq2;
 		}		
 	}
 	else
@@ -58,6 +61,7 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 			{
 				qspheres[i] = scene.spheres[q2array[i]];
 			}
+			num = numq3;
 		}
 		else
 		{
@@ -65,6 +69,7 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 			{
 				qspheres[i] = scene.spheres[q4array[i]];
 			}
+			num = numq4;
 		}
 	}
 
@@ -90,7 +95,8 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 	// initialize the random state for this pixel
 	curand_init(5351 * pixel, 0, 0, &random_state[pixel]);
 
-	image[pixel] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces, random_state, qspheres);
+	image[pixel] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces, random_state,
+		 qspheres, num);
 	__syncthreads(); // can't tell if this is necessary; it might be with shared mem access
 }
 
@@ -189,14 +195,14 @@ void generate_rays(Scene scene, Options option, char *output)
 					if(isright)
 					{
 						// In quadrant 2;
-						Q3Array[Q3Idx] = i;
-						Q3Idx += 1;
+						Q2Array[Q2Idx] = i;
+						Q2Idx += 1;
 					}
 					else
 					{
 						// In quadrant 1;
-						Q2Array[Q2Idx] = i;
-						Q2Idx += 1;
+						Q1Array[Q1Idx] = i;
+						Q1Idx += 1;
 					}
 				}
 			}

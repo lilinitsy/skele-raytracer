@@ -15,7 +15,8 @@
 
 __device__ vecmath::vec3 uniform_sample_hemi(float r1, float r2);
 __device__ vecmath::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_sphere, int depth, curandState *random_state);
-__device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_carlo, short num_path_traces, curandState *random_state, Sphere qspheres[]);
+__device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_carlo, short num_path_traces, 
+curandState *random_state, Sphere qspheres[], int num);
 
 
 __device__ vecmath::vec3 uniform_sample_hemi(float r1, float r2)
@@ -77,23 +78,24 @@ __device__ vecmath::vec3 montecarlo_global_illumination(Ray ray, CudaScene scene
 }
 
 
-__device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_carlo, short num_path_traces, curandState *random_state, Sphere qspheres[])
+__device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_carlo, short num_path_traces, 
+curandState *random_state, Sphere qspheres[], int num)
 {
 
 	float min_distance = INFINITY;
 	Sphere intersected_sphere;
 	bool hit_a_sphere = false;
-	for(unsigned int i = 0; i < scene.num_spheres; i++)
+	for(unsigned int i = 0; i < num; i++)
 	{
-		if(intersection_occurs(ray, scene.spheres[i].collider))
+		if(intersection_occurs(ray, qspheres[i].collider))
 		{
 			hit_a_sphere   = true;
-			float distance = collision_distance(ray, scene.spheres[i].collider);
+			float distance = collision_distance(ray, qspheres[i].collider);
 
 			if(distance < min_distance)
 			{
 				min_distance	   = distance;
-				intersected_sphere = scene.spheres[i];
+				intersected_sphere = qspheres[i];
 			}
 		}
 	}
