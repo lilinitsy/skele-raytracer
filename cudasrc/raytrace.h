@@ -15,7 +15,7 @@
 
 __device__ vecmath::vec3 uniform_sample_hemi(float r1, float r2);
 __device__ vecmath::vec3 direct_illumination(Ray ray, Scene scene, Sphere intersected_sphere, int depth, curandState *random_state);
-__device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_carlo, short num_path_traces, curandState *random_state);
+__device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_carlo, short num_path_traces, curandState *random_state, Sphere qspheres[]);
 
 
 __device__ vecmath::vec3 uniform_sample_hemi(float r1, float r2)
@@ -68,7 +68,7 @@ __device__ vecmath::vec3 montecarlo_global_illumination(Ray ray, CudaScene scene
 		Ray indirect_ray;
 		indirect_ray.position  = intersection_point + 0.00001f;
 		indirect_ray.direction = sample_world_space;
-		total_colour += (r1 * shade(indirect_ray, scene, depth - 1, true, num_rays, random_state)) / probability_dist;
+		//total_colour += (r1 * shade(indirect_ray, scene, depth - 1, true, num_rays, random_state, intersected_sphere)) / probability_dist;
 	}
 
 	total_colour /= num_rays;
@@ -77,7 +77,7 @@ __device__ vecmath::vec3 montecarlo_global_illumination(Ray ray, CudaScene scene
 }
 
 
-__device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_carlo, short num_path_traces, curandState *random_state)
+__device__ vecmath::vec3 shade(Ray ray, CudaScene scene, int depth, bool monte_carlo, short num_path_traces, curandState *random_state, Sphere qspheres[])
 {
 
 	float min_distance = INFINITY;

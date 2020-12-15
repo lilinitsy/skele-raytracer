@@ -13,8 +13,11 @@
 void generate_rays(Scene scene, Options option, char *output);
 
 
-__global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options option, curandState *random_state)
+__global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options option, curandState *random_state, int* q1array,
+	int* q2array, int* q3array, int* q4array, int numq1, int numq2, int numq3, int numq4)
 {
+	__shared__ struct Sphere qspheres[15];
+
 	int x = threadIdx.x + blockIdx.x * blockDim.x;
 	int y = threadIdx.y + blockIdx.y * blockDim.y;
 
@@ -28,6 +31,41 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 	if(x >= scene.width || y >= scene.height)
 	{
 		return;
+	}
+
+	if(x <= scene.width/2)
+	{
+		if(y <= scene.height/2)
+		{
+			for(int i=0; i< numq1; i++)
+			{
+				qspheres[i] = scene.spheres[q1array[i]];
+			}
+		}
+		else
+		{
+			for(int i=0; i< numq3; i++)
+			{
+				qspheres[i] = scene.spheres[q3array[i]];
+			}
+		}		
+	}
+	else
+	{
+		if(y <= scene.height/2)
+		{
+			for(int i=0; i< numq2; i++)
+			{
+				qspheres[i] = scene.spheres[q2array[i]];
+			}
+		}
+		else
+		{
+			for(int i=0; i< numq4; i++)
+			{
+				qspheres[i] = scene.spheres[q4array[i]];
+			}
+		}
 	}
 
 	// This was the cpu code:
@@ -52,7 +90,7 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 	// initialize the random state for this pixel
 	curand_init(5351 * pixel, 0, 0, &random_state[pixel]);
 
-	image[pixel] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces, random_state);
+	image[pixel] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces, random_state, qspheres);
 	__syncthreads(); // can't tell if this is necessary; it might be with shared mem access
 }
 
@@ -63,7 +101,6 @@ void generate_rays(Scene scene, Options option, char *output)
 	scene.height = 1080;
 
 
-
 	// Input Binning Starts
 
 	// With camera.position and camera.up & right, we have two planes Ax+By+Cz+D=0, calculate D first
@@ -72,6 +109,16 @@ void generate_rays(Scene scene, Options option, char *output)
 	float Dright = -1.0 * vecmath::dot(scene.camera.right, scene.camera.position);
 	float lengthup = vecmath::length(scene.camera.up);
 	float lengthright = vecmath::length(scene.camera.right);
+
+	int Q1Array[scene.spheres.size()];
+	int Q2Array[scene.spheres.size()];
+	int Q3Array[scene.spheres.size()];
+	int Q4Array[scene.spheres.size()];
+	
+	int Q1Idx = 0;
+	int Q2Idx = 0;
+	int Q3Idx = 0;
+	int Q4Idx = 0;
 
 	// Then, for each sphere, check two things:
 	// 1) its relationship with up and right planes;
@@ -94,17 +141,34 @@ void generate_rays(Scene scene, Options option, char *output)
 		{
 			if(!AwayFromRight)
 			{
-				scene.spheres[i].collider.quadrant *= 210; // In quadrant 1,2,3,4;
+				// In quadrant 1,2,3,4;
+				Q1Array[Q1Idx] = i;
+				Q2Array[Q2Idx] = i;
+				Q3Array[Q3Idx] = i;
+				Q4Array[Q4Idx] = i;
+				Q1Idx += 1;
+				Q2Idx += 1;
+				Q3Idx += 1;
+				Q4Idx += 1;
 			}
 			else
 			{
 				if(isright)
 				{
-					scene.spheres[i].collider.quadrant *= 21; // In quadrant 2,4;
+					// In quadrant 2,4;
+					Q2Array[Q2Idx] = i;
+					Q4Array[Q4Idx] = i;
+					Q2Idx += 1;
+					Q4Idx += 1;
 				}
+
 				else
 				{
-					scene.spheres[i].collider.quadrant *= 10; // In quadrant 1,3;
+					// In quadrant 1,3;
+					Q1Array[Q1Idx] = i;
+					Q3Array[Q3Idx] = i;
+					Q1Idx += 1;
+					Q3Idx += 1;
 				}
 			}
 		}
@@ -114,17 +178,25 @@ void generate_rays(Scene scene, Options option, char *output)
 			{
 				if(!AwayFromRight)
 				{
-					scene.spheres[i].collider.quadrant *= 6; // In quadrant 1,2;
+					// In quadrant 1,2;
+					Q1Array[Q1Idx] = i;
+					Q2Array[Q2Idx] = i;
+					Q1Idx += 1;
+					Q2Idx += 1;
 				}
 				else
 				{
 					if(isright)
 					{
-						scene.spheres[i].collider.quadrant *= 3; // In quadrant 2;
+						// In quadrant 2;
+						Q3Array[Q3Idx] = i;
+						Q3Idx += 1;
 					}
 					else
 					{
-						scene.spheres[i].collider.quadrant *= 2; // In quadrant 1;
+						// In quadrant 1;
+						Q2Array[Q2Idx] = i;
+						Q2Idx += 1;
 					}
 				}
 			}
@@ -132,17 +204,26 @@ void generate_rays(Scene scene, Options option, char *output)
 			{
 				if(!AwayFromRight)
 				{
-					scene.spheres[i].collider.quadrant *= 35; // In quadrant 3,4;
+					// In quadrant 3,4;
+					Q3Array[Q3Idx] = i;
+					Q4Array[Q4Idx] = i;
+					Q3Idx += 1;
+					Q4Idx += 1;
 				}
+
 				else
 				{
 					if(isright)
 					{
-						scene.spheres[i].collider.quadrant *= 7; // In quadrant 4;
+						// In quadrant 4;
+						Q4Array[Q4Idx] = i;
+						Q4Idx += 1;
 					}
 					else
 					{
-						scene.spheres[i].collider.quadrant *= 5; // In quadrant 3;
+						// In quadrant 3;
+						Q3Array[Q3Idx] = i;
+						Q3Idx += 1;
 					}
 				}
 			}
@@ -150,7 +231,25 @@ void generate_rays(Scene scene, Options option, char *output)
 
 	}
 
-	// Create arrays for spheres in four quadrants and send them to shared memory later (?);
+	printf("%d %d %d", Q1Array[0],Q1Array[1],Q1Array[2]);
+	int numq1 = Q1Idx;
+	int numq2 = Q2Idx;
+	int numq3= Q3Idx;
+	int numq4 = Q4Idx;
+
+	int* d_Q1Array;
+	int* d_Q2Array;
+	int* d_Q3Array;
+	int* d_Q4Array;
+
+	cudaMalloc((void **) &d_Q1Array, numq1 * sizeof(int));
+	cudaMalloc((void **) &d_Q2Array, numq2 * sizeof(int));
+	cudaMalloc((void **) &d_Q3Array, numq3 * sizeof(int));
+	cudaMalloc((void **) &d_Q4Array, numq4 * sizeof(int));
+	cudaMemcpy(d_Q1Array, Q1Array, numq1 * sizeof(int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_Q2Array, Q2Array, numq2 * sizeof(int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_Q3Array, Q3Array, numq3 * sizeof(int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_Q4Array, Q4Array, numq4 * sizeof(int), cudaMemcpyHostToDevice);
 
 
 	// Input Binning Ends
@@ -193,7 +292,8 @@ void generate_rays(Scene scene, Options option, char *output)
 	cudaMemcpy(image, image_host, image_size, cudaMemcpyHostToDevice);
 
 	// Launch kernel
-	ray_generation<<<blocks, grid>>>(image, cuda_scene_data, option, random_state);
+	ray_generation<<<blocks, grid>>>(image, cuda_scene_data, option, random_state, d_Q1Array, d_Q2Array, 
+		d_Q3Array, d_Q4Array, numq1, numq2, numq3, numq4);
 
 	// Copy the memory back to the host and then synchronize
 	cudaMemcpy(image_host, image, image_size, cudaMemcpyDeviceToHost);
