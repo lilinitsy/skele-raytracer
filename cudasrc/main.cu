@@ -16,7 +16,7 @@ void generate_rays(Scene scene, Options option, char *output);
 __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options option, curandState *random_state, int* q1array,
 	int* q2array, int* q3array, int* q4array, int numq1, int numq2, int numq3, int numq4)
 {
-	__shared__ struct Sphere qspheres[15];
+	__shared__ struct Sphere qspheres[20];
 
 	int x = threadIdx.x + blockIdx.x * blockDim.x;
 	int y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -34,15 +34,16 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 	}
 
 	int num;
-	if(x <= scene.width/2)
+	if(x < scene.width/2 )
 	{
-		if(y <= scene.height/2)
+		if(y < scene.height/2)
 		{
 			for(int i=0; i< numq1; i++)
 			{
 				qspheres[i] = scene.spheres[q1array[i]];
 			}
 			num = numq1;
+			__syncthreads();
 		}
 		else
 		{
@@ -50,18 +51,20 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 			{
 				qspheres[i] = scene.spheres[q3array[i]];
 			}
-			num = numq2;
+			num = numq3;
+			__syncthreads();
 		}		
 	}
 	else
 	{
-		if(y <= scene.height/2)
+		if(y < scene.height/2)
 		{
 			for(int i=0; i< numq2; i++)
 			{
 				qspheres[i] = scene.spheres[q2array[i]];
 			}
-			num = numq3;
+			num = numq2;
+			__syncthreads();
 		}
 		else
 		{
@@ -70,6 +73,7 @@ __global__ void ray_generation(vecmath::vec3 *image, CudaScene scene, Options op
 				qspheres[i] = scene.spheres[q4array[i]];
 			}
 			num = numq4;
+			__syncthreads();
 		}
 	}
 
@@ -136,12 +140,12 @@ void generate_rays(Scene scene, Options option, char *output)
 		float up = vecmath::dot(scene.camera.up, scene.spheres[i].collider.position) + Dup;
 		bool isup = (up >= 0);
 		float DistanceToUp = abs(up) / lengthup;
-		bool AwayFromUp = (DistanceToUp >= scene.spheres[i].collider.radius);
+		bool AwayFromUp = (DistanceToUp > scene.spheres[i].collider.radius);
 
 		float right = vecmath::dot(scene.camera.right, scene.spheres[i].collider.position) + Dright;
 		bool isright = (right >= 0);
 		float DistanceToRight = abs(right) / lengthright;
-		bool AwayFromRight = (DistanceToRight >= scene.spheres[i].collider.radius);
+		bool AwayFromRight = (DistanceToRight > scene.spheres[i].collider.radius);
 
 		if(!AwayFromUp)
 		{
@@ -159,7 +163,7 @@ void generate_rays(Scene scene, Options option, char *output)
 			}
 			else
 			{
-				if(isright)
+				if( isright )
 				{
 					// In quadrant 2,4;
 					Q2Array[Q2Idx] = i;
@@ -180,7 +184,7 @@ void generate_rays(Scene scene, Options option, char *output)
 		}
 		else
 		{
-			if(isup)
+			if( isup )
 			{
 				if(!AwayFromRight)
 				{
@@ -257,7 +261,6 @@ void generate_rays(Scene scene, Options option, char *output)
 	cudaMemcpy(d_Q3Array, Q3Array, numq3 * sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_Q4Array, Q4Array, numq4 * sizeof(int), cudaMemcpyHostToDevice);
 
-
 	// Input Binning Ends
 
 	// The output image that will be written to
@@ -282,7 +285,7 @@ void generate_rays(Scene scene, Options option, char *output)
 
 	// Can test different block sizes; this will give us 16 * 16 = 256 = 32 * 8 warps.
 	int thread_x = 16;
-	int thread_y = 16;
+	int thread_y = 12;
 
 	dim3 blocks;
 	blocks.x = scene.width / thread_x + 1;
@@ -323,6 +326,11 @@ void generate_rays(Scene scene, Options option, char *output)
 	printf("***\nWROTE TO PPM\n***\n");
 
 	cudaFree(image);
+	cudaFree(d_Q1Array);
+	cudaFree(d_Q2Array);
+	cudaFree(d_Q3Array);
+	cudaFree(d_Q4Array);
+
 }
 
 
