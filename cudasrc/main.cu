@@ -327,6 +327,12 @@ void generate_rays(Scene scene, Options option, char *output)
 	grid.y = thread_y;
 	grid.z = 1;
 
+	float time;
+	cudaEvent_t start, stop;
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+	cudaEventRecord( start,0);
+
 	// Copy host memory to device memory
 	cudaMemcpy(image, image_host, image_size, cudaMemcpyHostToDevice);
 
@@ -337,6 +343,12 @@ void generate_rays(Scene scene, Options option, char *output)
 	// Copy the memory back to the host and then synchronize
 	cudaMemcpy(image_host, image, image_size, cudaMemcpyDeviceToHost);
 	cudaDeviceSynchronize();
+
+	cudaEventRecord( stop, 0 );
+	cudaEventSynchronize( stop );
+	cudaEventElapsedTime( &time, start, stop );
+	cudaEventDestroy( start );
+	cudaEventDestroy( stop );
 
 	// Read back on the host
 	std::ofstream ofs(output, std::ios::out | std::ios::binary);
