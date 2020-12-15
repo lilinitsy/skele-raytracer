@@ -1,6 +1,6 @@
 #Simple Sphere Sceen
-#camera 0 2 -10 0 -.1 .9 0 1 0 26
-camera 0 2 -10 0 0 1 0 1 0 26
+camera 0 2 -10 0 -.1 .9 0 1 0 26
+#camera 0 2 -10 0 0 1 0 1 0 26
 output_image spheres2.bmp
 
 #"ground" sphere 0
