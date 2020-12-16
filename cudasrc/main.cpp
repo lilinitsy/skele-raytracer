@@ -273,10 +273,19 @@ int main(int argc, char *argv[])
 
 	srand((unsigned) time(0));
 
-
+	float time;
+    cudaEvent_t start, stop;
+	cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+	cudaEventRecord( start,0);
 	generate_rays(scene, option, output);
 
-
+	cudaEventRecord( stop, 0 );
+	cudaEventSynchronize( stop );
+	cudaEventElapsedTime( &time, start, stop );
+	cudaEventDestroy( start );
+	cudaEventDestroy( stop );
+	printf("CPU time used:%f ms\n",time);
 
 
 	return 0;

@@ -23,19 +23,24 @@ __constant__ bool monte_carlo;
 __constant__ short num_path_traces;
 __constant__ int nums;
 __constant__ float fov;
-
 //__constant__ Camera camera;
 
 
-__global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 pos,CudaScene scene, curandState *random_state)
+__global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 pos,CudaScene scene, curandState *random_state, int scale)
 {    
-	__shared__ int min_distance[32][32];// need to be change
+	__shared__ int min_distance[32][32];// blockdim x and blockdim y
 	__shared__ Sphere spheres[100];
+	//int temp=blockIdx.x/nums;
+	//int x = threadIdx.x + blockIdx.x * blockDim.x;
+
 	// there are num_of_sphere* number of pixels thread, (thread 0,1,2,3,4,num) compute collisiton for each different object.
-	int x = (threadIdx.x + blockIdx.x * blockDim.x)/nums; 
-	int i=(threadIdx.x + blockIdx.x * blockDim.x)%nums;//correspons to object i;
+	int x = threadIdx.x/nums+ blockIdx.x*scale; 
+	int i= threadIdx.x%nums;//correspons to object i;
 	int y = threadIdx.y + blockIdx.y * blockDim.y;
-	if(x >= w || y >= h)
+	
+	int pixelx=threadIdx.x/nums;
+
+	if(x >= w || y >= h || threadIdx.x+1>nums*scale)
 	{
 		return;
 	}
@@ -43,8 +48,7 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	if(blockIdx.x<nums){	
 	spheres[i]=scene.spheres[i];
 	}
-	int pixelx=((threadIdx.x + blockIdx.x * blockDim.x)/nums)%32;
-	if(i==0){
+	if(i==nums-1){
 		min_distance[pixelx][threadIdx.y]=INT_MAX;
 	}
 	__syncthreads();
@@ -214,8 +218,8 @@ void generate_rays(Scene scene, Options option, char *output)
 	// Can test different block sizes; this will give us 16 * 16 = 256 = 32 * 8 warps.
 	int numofobject=cuda_scene_data.num_spheres;
 
- 	int thread_x = 30;
-	int thread_y = 30;
+ 	int thread_x = 32;
+	int thread_y = 32;
 
 	dim3 blocks;  // how many block
 	blocks.x = scene.width / thread_x + 1;
@@ -229,14 +233,8 @@ void generate_rays(Scene scene, Options option, char *output)
 	grid.z = 1;
 
 	// Copy host memory to device memory
-	float time;
-    cudaEvent_t start, stop;
-	cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-	cudaEventRecord( start,0);
+
   //  cudaMemcpyToSymbol(Mc, M.elements, KERNEL_SIZE*KERNEL_SIZE*sizeof(float));
-	cudaMemcpy(image, image_host, image_size, cudaMemcpyHostToDevice);
-	cudaMemcpy(raydir, ray_host, image_size, cudaMemcpyHostToDevice);
 
    // constant memory
    cudaMemcpyToSymbol(w,&scene.width,sizeof(int));
@@ -246,6 +244,7 @@ void generate_rays(Scene scene, Options option, char *output)
    cudaMemcpyToSymbol(num_path_traces,&option.num_path_traces,sizeof(int));
    cudaMemcpyToSymbol(nums,&numofobject,sizeof(int));
    cudaMemcpyToSymbol(fov,&option.fov,sizeof(int));
+   int scale=grid.x/numofobject;
 
    //cudaMemcpyToSymbol(camera, &scene.camera, sizeof(scene.camera));
 
@@ -253,11 +252,21 @@ void generate_rays(Scene scene, Options option, char *output)
 	//allocate_constant_cudascene(host_cuda_scene);
 
 	// Launch kernel
+	float time;
+    cudaEvent_t start, stop;
+	cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+	cudaEventRecord( start,0);
+	cudaMemcpy(image, image_host, image_size, cudaMemcpyHostToDevice);
+	cudaMemcpy(raydir, ray_host, image_size, cudaMemcpyHostToDevice);
 	ray_generation<<<blocks, grid>>>(raydir,scene.camera);//return a raydir
 
     cudaDeviceSynchronize();
-    blocks.x*=numofobject;
-	shade<<<blocks,grid>>>(image,raydir,scene.camera.position,cuda_scene_data, random_state); //return color;
+	blocks.x=scene.width/scale;
+	if(scene.width%scale){
+		blocks.x++;
+	}
+	shade<<<blocks,grid>>>(image,raydir,scene.camera.position,cuda_scene_data, random_state,scale); //return color;
 	// Copy the memory back to the host and then synchronize
 	cudaMemcpy(image_host, image, image_size, cudaMemcpyDeviceToHost);
 	cudaDeviceSynchronize();
