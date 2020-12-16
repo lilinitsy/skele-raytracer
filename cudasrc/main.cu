@@ -13,7 +13,7 @@
 
 //__constant__  CudaScene scene;
 #define BLOCK_SIZEX 32
-#define BLOCK_SIZEy 32
+#define BLOCK_SIZEY 32
 
 void generate_rays(Scene scene, Options option, char *output);
 __constant__ int w;
@@ -28,7 +28,7 @@ __constant__ float fov;
 
 __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 pos,CudaScene scene, curandState *random_state, int scale)
 {    
-	__shared__ int min_distance[32][32];// blockdim x and blockdim y
+	__shared__ int min_distance[BLOCK_SIZEX][BLOCK_SIZEY];// blockdim x and blockdim y
 	__shared__ Sphere spheres[100];
 	//int temp=blockIdx.x/nums;
 	//int x = threadIdx.x + blockIdx.x * blockDim.x;
@@ -77,21 +77,21 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	atomicMin(&min_distance[pixelx][threadIdx.y],int(distance));
  	}
    }
-   else{//traiangle
-		float t;
-		float u;
-		float v;
-		if(triangle_intersection_occurs(currentray, scene.triangles[i-num_of_sphere], t, u, v))
-		{
-			if(t < min_distance[pixelx][threadIdx.y])
-			{
-				min_distance[pixelx][threadIdx.y]		 = t;
-				hit_a_sphere		 = false;
-				hit_a_triangle		 = true;
-				intersected_triangle = scene.triangles[i];
-			}
-		}
-	}
+//    else{//traiangle
+// 		float t;
+// 		float u;
+// 		float v;
+// 		if(triangle_intersection_occurs(currentray, scene.triangles[i-num_of_sphere], t, u, v))
+// 		{
+// 			if(t < min_distance[pixelx][threadIdx.y])
+// 			{
+// 				min_distance[pixelx][threadIdx.y]		 = t;
+// 				hit_a_sphere		 = false;
+// 				hit_a_triangle		 = true;
+// 				intersected_triangle = scene.triangles[i];
+// 			}
+// 		}
+// 	}
 	__syncthreads(); 
 	// If no sphere was hit, then the background was hit, so return that colour
 	if(min_distance[pixelx][threadIdx.y]==INFINITY)
@@ -123,10 +123,9 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 		return;
 	}
 
-	if(hit_a_triangle)
+	if(hit_a_triangle&&int(distance)==min_distance[pixelx][threadIdx.y])
 	{
 		image[pixel]=vecmath::vec3(0.0f, 0.0f, 0.0f);
-
 		return;
 	}
 
@@ -218,8 +217,8 @@ void generate_rays(Scene scene, Options option, char *output)
 	// Can test different block sizes; this will give us 16 * 16 = 256 = 32 * 8 warps.
 	int numofobject=cuda_scene_data.num_spheres;
 
- 	int thread_x = 32;
-	int thread_y = 32;
+ 	int thread_x = BLOCK_SIZEX ;
+	int thread_y = BLOCK_SIZEY;
 
 	dim3 blocks;  // how many block
 	blocks.x = scene.width / thread_x + 1;
@@ -245,7 +244,7 @@ void generate_rays(Scene scene, Options option, char *output)
    cudaMemcpyToSymbol(nums,&numofobject,sizeof(int));
    cudaMemcpyToSymbol(fov,&option.fov,sizeof(int));
    int scale=grid.x/numofobject;
-
+    printf("numofobject%d",numofobject);
    //cudaMemcpyToSymbol(camera, &scene.camera, sizeof(scene.camera));
 
 
@@ -261,7 +260,8 @@ void generate_rays(Scene scene, Options option, char *output)
 	cudaMemcpy(raydir, ray_host, image_size, cudaMemcpyHostToDevice);
 	ray_generation<<<blocks, grid>>>(raydir,scene.camera);//return a raydir
 
-    cudaDeviceSynchronize();
+	cudaDeviceSynchronize();
+	
 	blocks.x=scene.width/scale;
 	if(scene.width%scale){
 		blocks.x++;
