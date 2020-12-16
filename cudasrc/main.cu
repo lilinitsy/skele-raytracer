@@ -26,10 +26,13 @@ __constant__ float fov;
 //__constant__ Camera camera;
 
 
-__global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 pos,CudaScene scene, curandState *random_state, int scale)
+__global__ void shade(vecmath::vec3 *image, vecmath::vec3 pos,CudaScene scene, curandState *random_state, int scale)
 {    
 	__shared__ int min_distance[BLOCK_SIZEX][BLOCK_SIZEY];// blockdim x and blockdim y
+	//__shared__ int ray_dir[BLOCK_SIZEX][BLOCK_SIZEY];// blockdim x and blockdim y
 	__shared__ Sphere spheres[100];
+
+	
 	//int temp=blockIdx.x/nums;
 	//int x = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -38,6 +41,29 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	int i= threadIdx.x%nums;//correspons to object i;
 	int y = threadIdx.y + blockIdx.y * blockDim.y;
 	
+
+	float inv_width	 = 1.0f / (float) w;
+	float inv_height = 1.0f / (float) h;
+
+	float aspect_ratio = (float) w / (float) h;
+	float angle		   = tan(M_PI * 0.5f * fov / 180.0f);
+
+	if(x >= w || y >= h)
+	{
+		return;
+	}
+	// This was the cpu code:
+	float u = (2 * ((x + 0.5) * inv_width) - 1) * angle * aspect_ratio;
+	float v = (1 - 2 * ((y + 0.5) * inv_height)) * angle;
+
+	vecmath::vec3 raydir;
+	raydir = scene.camera.direction + u * scene.camera.right + v * scene.camera.up;
+	//ray_dir.y -= 1.0f; // this makes the ray_direction correct
+	raydir = vecmath::normalize(raydir);
+
+	// the pixel index is y * width since width is the max x value, and then this gets us to the y coordinate
+	// and then shift over by x amount to hit pixel (x, y)
+	int pixel = y * w + x;
 	int pixelx=threadIdx.x/nums;
 
 	if(x >= w || y >= h || threadIdx.x+1>nums*scale)
@@ -52,14 +78,12 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 		min_distance[pixelx][threadIdx.y]=INT_MAX;
 	}
 	__syncthreads();
-
-	int pixel = y * w + x;
 	//float min_distance = INFINITY;
 	Sphere intersected_sphere;
 	bool hit_a_sphere = false;
 	Ray currentray;
 	currentray.position=pos;
-	currentray.direction=raydir[pixel];
+	currentray.direction=raydir;
 
 //	printf("cureent ray% f %f %f",currentray.position.x,currentray.position.y,currentray.position.z);
 
@@ -132,52 +156,52 @@ __global__ void shade(vecmath::vec3 *image,vecmath::vec3 *raydir, vecmath::vec3 
 	return;
 }
 
-__global__ void ray_generation(vecmath::vec3 *outputray, Camera camera)
-{  
+// __global__ void ray_generation(vecmath::vec3 *outputray, Camera camera)
+// {  
 	
 	
-	int x = threadIdx.x + blockIdx.x * blockDim.x;
-	int y = threadIdx.y + blockIdx.y * blockDim.y;
+// 	int x = threadIdx.x + blockIdx.x * blockDim.x;
+// 	int y = threadIdx.y + blockIdx.y * blockDim.y;
 
-	float inv_width	 = 1.0f / (float) w;
-	float inv_height = 1.0f / (float) h;
+// 	float inv_width	 = 1.0f / (float) w;
+// 	float inv_height = 1.0f / (float) h;
 
-	float aspect_ratio = (float) w / (float) h;
-	float angle		   = tan(M_PI * 0.5f * fov / 180.0f);
-
-
-	if(x >= w || y >= h)
-	{
-		return;
-	}
-
-	// This was the cpu code:
-	float u = (2 * ((x + 0.5) * inv_width) - 1) * angle * aspect_ratio;
-	float v = (1 - 2 * ((y + 0.5) * inv_height)) * angle;
-
-	vecmath::vec3 ray_dir;
-	ray_dir = camera.direction + u * camera.right + v * camera.up;
-	//ray_dir.y -= 1.0f; // this makes the ray_direction correct
-	ray_dir = vecmath::normalize(ray_dir);
-
-	Ray ray;
-	ray.position  = camera.position;
-	ray.direction = ray_dir;
-	ray.direction = vecmath::normalize(ray.direction);
+// 	float aspect_ratio = (float) w / (float) h;
+// 	float angle		   = tan(M_PI * 0.5f * fov / 180.0f);
 
 
-	// the pixel index is y * width since width is the max x value, and then this gets us to the y coordinate
-	// and then shift over by x amount to hit pixel (x, y)
-	int pixel = y * w + x;
-	//printf("outputray[pixel]");
+// 	if(x >= w || y >= h)
+// 	{
+// 		return;
+// 	}
 
-	// initialize the random state for this pixel
-//	curand_init(5351 * pixel, 0, 0, &random_state[pixel]);
-	 outputray[pixel]=ray_dir;
-	 //printf("outputray[pixel]%f",outputray[pixel].x);
-	//ray[pixel] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces, random_state);
-	//__syncthreads(); // can't tell if this is necessary; it might be with shared mem access
-}
+// 	// This was the cpu code:
+// 	float u = (2 * ((x + 0.5) * inv_width) - 1) * angle * aspect_ratio;
+// 	float v = (1 - 2 * ((y + 0.5) * inv_height)) * angle;
+
+// 	vecmath::vec3 ray_dir;
+// 	ray_dir = camera.direction + u * camera.right + v * camera.up;
+// 	//ray_dir.y -= 1.0f; // this makes the ray_direction correct
+// 	ray_dir = vecmath::normalize(ray_dir);
+
+// 	Ray ray;
+// 	ray.position  = camera.position;
+// 	ray.direction = ray_dir;
+// 	ray.direction = vecmath::normalize(ray.direction);
+
+
+// 	// the pixel index is y * width since width is the max x value, and then this gets us to the y coordinate
+// 	// and then shift over by x amount to hit pixel (x, y)
+// 	int pixel = y * w + x;
+// 	//printf("outputray[pixel]");
+
+// 	// initialize the random state for this pixel
+// //	curand_init(5351 * pixel, 0, 0, &random_state[pixel]);
+// 	 outputray[pixel]=ray_dir;
+// 	 //printf("outputray[pixel]%f",outputray[pixel].x);
+// 	//ray[pixel] = shade(ray, scene, option.max_depth, option.monte_carlo, option.num_path_traces, random_state);
+// 	//__syncthreads(); // can't tell if this is necessary; it might be with shared mem access
+// }
 
 
 void generate_rays(Scene scene, Options option, char *output)
@@ -246,9 +270,13 @@ void generate_rays(Scene scene, Options option, char *output)
    int scale=grid.x/numofobject;
     printf("numofobject%d",numofobject);
    //cudaMemcpyToSymbol(camera, &scene.camera, sizeof(scene.camera));
-
+   blocks.x=scene.width/scale;
+   if(scene.width%scale){
+	   blocks.x++;
+   }
 
 	//allocate_constant_cudascene(host_cuda_scene);
+	cudaMemcpy(image, image_host, image_size, cudaMemcpyHostToDevice);
 
 	// Launch kernel
 	float time;
@@ -256,17 +284,11 @@ void generate_rays(Scene scene, Options option, char *output)
 	cudaEventCreate(&start);
     cudaEventCreate(&stop);
 	cudaEventRecord( start,0);
-	cudaMemcpy(image, image_host, image_size, cudaMemcpyHostToDevice);
-	cudaMemcpy(raydir, ray_host, image_size, cudaMemcpyHostToDevice);
-	ray_generation<<<blocks, grid>>>(raydir,scene.camera);//return a raydir
+	//cudaMemcpy(raydir, ray_host, image_size, cudaMemcpyHostToDevice);
+	//ray_generation<<<blocks, grid>>>(raydir,scene.camera);//return a raydir
 
-	cudaDeviceSynchronize();
-	
-	blocks.x=scene.width/scale;
-	if(scene.width%scale){
-		blocks.x++;
-	}
-	shade<<<blocks,grid>>>(image,raydir,scene.camera.position,cuda_scene_data, random_state,scale); //return color;
+	//cudaDeviceSynchronize();
+	shade<<<blocks,grid>>>(image,scene.camera.position,cuda_scene_data, random_state,scale); //return color;
 	// Copy the memory back to the host and then synchronize
 	cudaMemcpy(image_host, image, image_size, cudaMemcpyDeviceToHost);
 	cudaDeviceSynchronize();
